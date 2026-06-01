@@ -189,15 +189,8 @@ def export_cable_routing_excel():
         except ValueError:
             ws['B10'] = 0.20
             
-        # Populate outputs (Col B)
-        ws['B13'] = outputs.get('sharing', '')
-        ws['B14'] = outputs.get('sepReq', '')
-        ws['B15'] = outputs.get('dedicated', '')
-        ws['B16'] = outputs.get('review', '')
-        ws['B17'] = outputs.get('schedOk', '')
-        ws['B18'] = outputs.get('model', '')
-        ws['B19'] = outputs.get('owner', '')
-        ws['B20'] = outputs.get('summary', '')
+        # Output cells (B13-B20) are left unmodified to preserve the template's Excel formulas.
+        # Excel will dynamically calculate these cells based on the inputs when opened.
         
         # Populate notes in A23 (replaces placeholder text)
         if inputs.get('notes'):
