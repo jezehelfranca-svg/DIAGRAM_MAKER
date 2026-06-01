@@ -1,895 +1,504 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cable Routing Decision Navigator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root {
-    --bg-primary: #0a0c10;
-    --bg-card: rgba(17, 22, 33, 0.7);
-    --border-glow: rgba(147, 51, 234, 0.25);
-    --border-hover: rgba(147, 51, 234, 0.5);
-    --accent-primary: #a78bfa;
-    --accent-secondary: #3b82f6;
-    --text-main: #f3f4f6;
-    --text-muted: #9ca3af;
-    --success: #34d399;
-    --error: #f87171;
-    --glass-border: rgba(255, 255, 255, 0.05);
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Outfit', sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-main);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.15) 0%, transparent 45%);
-    background-attachment: fixed;
-}
-
-header {
-    padding: 1.5rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    z-index: 10;
-}
-
-.logo {
-    font-size: 1.6rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.logo span {
-    font-weight: 300;
-    color: var(--text-muted);
-    font-size: 1rem;
-}
-
-.badge {
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.3);
-    color: var(--accent-primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-main {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    width: 100%;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 420px;
-    gap: 1.5rem;
-}
-
-.card {
-    background: var(--bg-card);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card:hover {
-    border-color: var(--border-glow);
-    box-shadow: 0 10px 40px rgba(147, 51, 234, 0.05);
-}
-
-h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--text-main);
-    border-left: 3px solid var(--accent-primary);
-    padding-left: 0.75rem;
-}
-
-.diagram {
-    overflow: auto;
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    background: #080a0f;
-    padding: 1.5rem;
-    display: flex;
-    justify-content: center;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.8);
-}
-
-/* SVG Dark Theme Styles */
-svg {
-    background: #080a0f;
-}
-.node {
-    fill: #111827;
-    stroke: var(--accent-secondary);
-    stroke-width: 1.5px;
-}
-.check {
-    fill: #1e293b;
-    stroke: #fbbf24;
-    stroke-width: 1.5px;
-}
-.dec {
-    fill: #1e1b4b;
-    stroke: var(--accent-primary);
-    stroke-width: 2px;
-}
-.bad {
-    fill: #450a0a;
-    stroke: var(--error);
-    stroke-width: 2px;
-}
-.ok {
-    fill: #064e3b;
-    stroke: var(--success);
-    stroke-width: 1.5px;
-}
-.txt {
-    font-size: 12px;
-    font-family: 'Outfit', sans-serif;
-    fill: var(--text-main);
-}
-.ttl {
-    font-size: 13px;
-    font-weight: bold;
-    fill: var(--accent-primary);
-}
-.idc {
-    fill: var(--accent-primary);
-}
-.idt {
-    fill: #ffffff;
-    font-size: 10px;
-    font-weight: bold;
-}
-.arr {
-    stroke: #4b5563;
-    stroke-width: 1.5px;
-    fill: none;
-    marker-end: url(#arr);
-}
-.side {
-    stroke: #9ca3af;
-    stroke-width: 4px;
-    fill: none;
-    marker-end: url(#arrBlack);
-}
-
-/* State highlights */
-.done {
-    stroke: var(--success) !important;
-    stroke-width: 3px !important;
-}
-.active {
-    stroke: var(--accent-secondary) !important;
-    stroke-width: 5px !important;
-    filter: url(#glow);
-}
-.stop {
-    stroke: var(--error) !important;
-    stroke-width: 5px !important;
-    filter: url(#glowRed);
-}
-.activeNode {
-    stroke: var(--accent-secondary) !important;
-    stroke-width: 4px !important;
-    filter: url(#glow);
-}
-.doneNode {
-    stroke: var(--success) !important;
-    stroke-width: 3px !important;
-}
-.stopNode {
-    stroke: var(--error) !important;
-    stroke-width: 4px !important;
-    filter: url(#glowRed);
-}
-
-/* Form Styling */
-select, input {
-    width: 100%;
-    font-size: 12px;
-    padding: 6px 10px;
-    border: 1px solid var(--glass-border);
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.3);
-    color: var(--text-main);
-    font-family: inherit;
-    outline: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-select:focus, input:focus {
-    border-color: var(--accent-primary);
-    background: rgba(0, 0, 0, 0.5);
-}
-select option {
-    background: var(--bg-primary);
-    color: var(--text-main);
-}
-
-.out {
-    display: grid;
-    grid-template-columns: 180px 1fr;
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.2);
-}
-.out div {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--glass-border);
-    font-size: 0.9rem;
-    align-self: center;
-}
-.out div:nth-child(odd) {
-    font-weight: 500;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.02);
-}
-.out div:last-child, .out div:nth-last-child(2) {
-    border-bottom: none;
-}
-
-.badge {
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-weight: 600;
-    font-size: 11px;
-    display: inline-block;
-    border: 1px solid transparent;
-}
-.yes {
-    background: rgba(52, 211, 153, 0.1);
-    color: var(--success);
-    border-color: rgba(52, 211, 153, 0.3);
-}
-.no {
-    background: rgba(248, 113, 113, 0.1);
-    color: var(--error);
-    border-color: rgba(248, 113, 113, 0.3);
-}
-.warn {
-    background: rgba(251, 191, 36, 0.1);
-    color: #fbbf24;
-    border-color: rgba(251, 191, 36, 0.3);
-}
-.na {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-muted);
-    border-color: var(--glass-border);
-}
-
-.legend {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 1.25rem;
-    display: flex;
-    gap: 1.5rem;
-}
-
-.btn {
-    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-    color: white;
-    border: 0;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
-}
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-}
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: var(--text-main);
-    box-shadow: none;
-}
-.btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: none;
-}
-
-table {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-}
-th {
-    background: rgba(12, 17, 27, 0.8);
-    color: var(--text-main);
-    font-weight: 600;
-}
-td, th {
-    border: 1px solid var(--glass-border);
-    padding: 10px 14px;
-    text-align: left;
-    vertical-align: top;
-}
-tr:nth-child(even) td {
-    background: rgba(255, 255, 255, 0.01);
-}
-tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.note {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    line-height: 1.5;
-    margin-top: 1rem;
-}
-
-textarea {
-    width: 100%;
-    height: 100px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text-main);
-    font-family: inherit;
-    font-size: 0.9rem;
-    outline: none;
-    resize: none;
-    transition: border-color 0.3s ease;
-}
-textarea:focus {
-    border-color: var(--accent-primary);
-}
-
-@media(max-width: 1050px){
-    .grid { grid-template-columns: 1fr; }
-}
-
-@media print {
-    @page {
-        size: landscape;
-        margin: 0.5cm;
-    }
-    body {
-        background: #ffffff !important;
-        color: #000000 !important;
-        background-image: none !important;
-    }
-    header, 
-    main > .card, 
-    .sidePanel > .card:nth-child(3), 
-    .btn,
-    .legend,
-    .note {
-        display: none !important;
-    }
-    main {
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-    .grid {
-        display: grid !important;
-        grid-template-columns: 1fr 380px !important;
-        gap: 1rem !important;
-        width: 100% !important;
-    }
-    .card {
-        background: #ffffff !important;
-        border: 1px solid #cccccc !important;
-        color: #000000 !important;
-        box-shadow: none !important;
-        backdrop-filter: none !important;
-        padding: 0.75rem !important;
-        page-break-inside: avoid;
-    }
-    .diagram {
-        background: #ffffff !important;
-        border: 1px solid #cccccc !important;
-        box-shadow: none !important;
-        overflow: visible !important;
-        padding: 0.5rem !important;
-    }
-    .diagram svg {
-        width: 100% !important;
-        height: auto !important;
-        max-height: 85vh !important;
-        background: #ffffff !important;
-    }
-    .node {
-        fill: #f9fafb !important;
-        stroke: #3b82f6 !important;
-    }
-    .check {
-        fill: #fef3c7 !important;
-        stroke: #d97706 !important;
-    }
-    .dec {
-        fill: #e0e7ff !important;
-        stroke: #4f46e5 !important;
-    }
-    .bad {
-        fill: #fee2e2 !important;
-        stroke: #dc2626 !important;
-    }
-    .ok {
-        fill: #d1fae5 !important;
-        stroke: #059669 !important;
-    }
-    .txt {
-        fill: #111827 !important;
-    }
-    .ttl {
-        fill: #4f46e5 !important;
-    }
-    .idc {
-        fill: #4f46e5 !important;
-    }
-    .idt {
-        fill: #ffffff !important;
-    }
-    .arr {
-        stroke: #4b5563 !important;
-    }
-    .side {
-        stroke: #111827 !important;
-    }
-    .out {
-        border: 1px solid #cccccc !important;
-        background: #ffffff !important;
-    }
-    .out div {
-        border-bottom: 1px solid #cccccc !important;
-        color: #000000 !important;
-    }
-    .out div:nth-child(odd) {
-        background: #f3f4f6 !important;
-        color: #374151 !important;
-    }
-    h2 {
-        color: #000000 !important;
-        border-left: 3px solid #4f46e5 !important;
-    }
-    .badge.yes {
-        background: #d1fae5 !important;
-        color: #065f46 !important;
-        border-color: #a7f3d0 !important;
-    }
-    .badge.no {
-        background: #fee2e2 !important;
-        color: #991b1b !important;
-        border-color: #fca5a5 !important;
-    }
-    .badge.warn {
-        background: #fef3c7 !important;
-        color: #92400e !important;
-        border-color: #fde68a !important;
-    }
-    .badge.na {
-        background: #f3f4f6 !important;
-        color: #4b5563 !important;
-        border-color: #e5e7eb !important;
-    }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cable Routing Decision Suite</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+        window.mermaid = mermaid;
+    </script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-hover: #1557b0;
+            --surface: #ffffff;
+            --background: #f8f9fa;
+            --text: #202124;
+            --text-muted: #5f6368;
+            --border: #dadce0;
+            --success: #34a853;
+            --danger: #ea4335;
+            --warning: #fbbc04;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--background); color: var(--text); line-height: 1.5; padding: 1rem; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        .logo-area { display: flex; align-items: center; gap: 1rem; }
+        .logo-area svg { width: 32px; height: 32px; color: var(--primary); }
+        .title-block { font-size: 1.25rem; font-weight: 600; }
+        .title-block span { font-weight: 400; color: var(--text-muted); }
+        .badge { background: #e8f0fe; color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 16px; font-size: 0.875rem; font-weight: 500; }
+        
+        .grid { display: flex; gap: 1rem; align-items: flex-start; }
+        .sidePanel { flex: 0 0 320px; display: flex; flex-direction: column; gap: 1rem; }
+        .mainArea { flex: 1; background: var(--surface); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1rem; min-height: 800px; overflow: auto; }
+        
+        .card { background: var(--surface); padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+        select, input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 0.95rem; }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 500; text-align: center; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--background); }
+        
+        .out div { font-size: 0.9rem; padding: 0.25rem 0; }
+        .out div:nth-child(odd) { font-weight: 600; color: var(--text-muted); margin-top: 0.5rem; }
+        
+        #mermaid-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; }
+    </style>
 </head>
 <body>
 
     <header>
-        <div style="display: flex; align-items: center; gap: 3rem;">
-            <div class="logo">
+        <div class="logo-area">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div class="title-block">
                 CABLE ROUTING DECISION SUITE
-                <span>| Standalone UI</span>
+                <span>| MMD Visualizer</span>
             </div>
         </div>
-        <div class="badge">Offline Processing Mode</div>
+        <div class="badge">Mermaid Engine Active</div>
     </header>
 
-    <main>
-        <div class="grid">
-            <section class="card">
-                <h2>Workflow Diagram with Inline Inputs</h2>
-                <div class="legend">
-                    <div><span class="badge warn">Blue Glow</span> Active Route</div>
-                    <div><span class="badge yes">Green Edge</span> Completed Route</div>
-                    <div><span class="badge no">Red Edge</span> Rejected Route</div>
+    <div class="grid">
+        <aside class="sidePanel">
+            <div class="card">
+                <h2>Routing Parameters</h2>
+                <div class="form-group">
+                    <label>Installation Area</label>
+                    <select id="area"></select>
                 </div>
-                <div class="diagram">
-                    <svg width="1100" height="1250" viewBox="0 0 1100 1250" aria-label="Cable routing workflow diagram">
-                        <defs>
-                            <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#8b949e"/></marker>
-                            <marker id="arrBlack" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#f3f4f6"/></marker>
-                            <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                            <filter id="glowRed"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-                        </defs>
-                        <rect id="n1" x="420" y="20" width="260" height="45" rx="8" class="node"/><circle cx="435" cy="35" r="13" class="idc"/><text x="435" y="39" text-anchor="middle" class="idt">S01</text><text x="550" y="47" text-anchor="middle" class="txt ttl">Start Cable Routing Planning</text><path id="l1" d="M550 65 L550 95" class="arr"/>
-                        <rect id="n2" x="385" y="95" width="330" height="55" rx="8" class="check"/><circle cx="400" cy="110" r="13" class="idc"/><text x="400" y="114" text-anchor="middle" class="idt">S02</text><text x="550" y="118" text-anchor="middle" class="txt ttl">Early Common Design Principles</text><text x="550" y="137" text-anchor="middle" class="txt">E / I / T common route basis</text><path id="l2" d="M550 150 L550 180" class="arr"/>
-                        <polygon id="n3" points="550,180 700,235 550,290 400,235" class="dec"/><circle cx="435" cy="212" r="13" class="idc"/><text x="435" y="216" text-anchor="middle" class="idt">S03</text><text x="550" y="213" text-anchor="middle" class="txt ttl">Classify Area</text><text x="550" y="231" text-anchor="middle" class="txt">Area input selection</text><foreignObject x="462" y="240" width="176" height="34"><select id="area"></select></foreignObject>
-                        <path id="l3out" d="M400 235 L190 235 L190 330" class="arr"/><text x="285" y="225" class="txt">Outdoor</text><path id="l3in" d="M700 235 L905 235 L905 330" class="arr"/><text x="760" y="225" class="txt">Indoor / Control Room</text>
-                        <rect id="n4a" x="60" y="330" width="260" height="60" rx="8" class="node"/><circle cx="75" cy="345" r="13" class="idc"/><text x="75" y="349" text-anchor="middle" class="idt">S04A</text><text x="190" y="354" text-anchor="middle" class="txt ttl">Outdoor / AG Area</text><text x="190" y="374" text-anchor="middle" class="txt">More flexible with review</text>
-                        <rect id="n4b" x="775" y="330" width="260" height="60" rx="8" class="bad"/><circle cx="790" cy="345" r="13" class="idc"/><text x="790" y="349" text-anchor="middle" class="idt">S04B</text><text x="905" y="354" text-anchor="middle" class="txt ttl">Indoor / Controlled Area</text><text x="905" y="374" text-anchor="middle" class="txt">Very limited sharing</text>
-                        <path id="l4a" d="M190 390 L190 500 L355 500" class="side"/><path id="l4b" d="M905 390 L905 500 L745 500" class="side"/>
-                        <rect id="n5" x="355" y="455" width="390" height="135" rx="8" class="check"/><circle cx="370" cy="470" r="13" class="idc"/><text x="370" y="474" text-anchor="middle" class="idt">S05</text><text x="550" y="478" text-anchor="middle" class="txt ttl">Identify Cable System Type</text><foreignObject x="405" y="488" width="290" height="95"><select id="primary"></select><select id="shared" style="margin-top:5px"></select></foreignObject>
-                        <path id="l5" d="M550 590 L550 620" class="arr"/>
-                        <polygon id="n6" points="550,620 700,675 550,730 400,675" class="dec"/><circle cx="435" cy="652" r="13" class="idc"/><text x="435" y="656" text-anchor="middle" class="idt">S06</text><text x="550" y="659" text-anchor="middle" class="txt ttl">Same Tray Considered?</text><foreignObject x="490" y="682" width="120" height="32"><select id="same"></select></foreignObject>
-                        <path id="l6no" d="M400 675 L230 675 L230 795" class="arr"/><text x="315" y="665" class="txt">No</text><path id="l6yes" d="M700 675 L850 675 L850 760" class="arr"/><text x="770" y="665" class="txt">Yes</text>
-                        <rect id="n7r" x="105" y="795" width="250" height="60" rx="8" class="bad"/><circle cx="120" cy="810" r="13" class="idc"/><text x="120" y="814" text-anchor="middle" class="idt">S07R</text><text x="230" y="820" text-anchor="middle" class="txt ttl">Separate Tray / Trench</text><text x="230" y="840" text-anchor="middle" class="txt">Dedicated route required</text>
-                        <polygon id="n7" points="850,740 995,800 850,860 705,800" class="dec"/><circle cx="740" cy="774" r="13" class="idc"/><text x="740" y="778" text-anchor="middle" class="idt">S07</text><text x="850" y="782" text-anchor="middle" class="txt ttl">Separator Check</text><text x="850" y="800" text-anchor="middle" class="txt">Required / Applied?</text><foreignObject x="790" y="812" width="120" height="36"><select id="sep"></select></foreignObject>
-                        <path id="l7bad" d="M705 800 L520 800 L355 825" class="arr"/><text x="560" y="790" class="txt">Not OK</text><path id="l7ok" d="M850 860 L850 895" class="arr"/>
-                        <polygon id="n8" points="850,895 995,955 850,1015 705,955" class="dec"/><circle cx="740" cy="929" r="13" class="idc"/><text x="740" y="933" text-anchor="middle" class="idt">S08</text><text x="850" y="937" text-anchor="middle" class="txt ttl">Construction Schedule</text><text x="850" y="955" text-anchor="middle" class="txt">Compatible?</text><foreignObject x="778" y="968" width="145" height="36"><select id="sched"></select></foreignObject>
-                        <path id="l8bad" d="M705 955 L510 955 L355 845" class="arr"/><text x="585" y="945" class="txt">Different Phase</text><path id="l8ok" d="M850 1015 L850 1050 L550 1050" class="arr"/>
-                        <rect id="n9" x="380" y="1020" width="340" height="105" rx="8" class="check"/><circle cx="395" cy="1035" r="13" class="idc"/><text x="395" y="1039" text-anchor="middle" class="idt">S09</text><text x="550" y="1043" text-anchor="middle" class="txt ttl">Separation Review + Tray Spare</text><text x="550" y="1063" text-anchor="middle" class="txt">Distance rules and spare percent</text><foreignObject x="500" y="1070" width="100" height="45"><input id="spare" type="number" min="0" max="100" value="20"></foreignObject>
-                        <path id="l9" d="M550 1125 L550 1155" class="arr"/><rect id="n10" x="380" y="1155" width="340" height="55" rx="8" class="ok"/><circle cx="395" cy="1170" r="13" class="idc"/><text x="395" y="1174" text-anchor="middle" class="idt">S10</text><text x="550" y="1183" text-anchor="middle" class="txt ttl">Finalize Route Model and Owner</text><text x="550" y="1201" text-anchor="middle" class="txt">Approve routing design and decision owner</text>
-                    </svg>
+                <div class="form-group">
+                    <label>Primary Cable System</label>
+                    <select id="primary"></select>
                 </div>
-                <p class="note">Revised interactive workspace diagram. Stage inputs dynamically highlight current pathways and rule evaluations.</p>
-            </section>
+                <div class="form-group">
+                    <label>Shared Cable System</label>
+                    <select id="shared"></select>
+                </div>
+                <div class="form-group">
+                    <label>Owner Approval Granted?</label>
+                    <select id="ownerApprove">
+                        <option>Yes</option>
+                        <option>No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Same Tray Considered?</label>
+                    <select id="same"></select>
+                </div>
+                <div class="form-group">
+                    <label>Separator Applied?</label>
+                    <select id="sep"></select>
+                </div>
+                <div class="form-group">
+                    <label>Construction Schedule</label>
+                    <select id="sched"></select>
+                </div>
+                <div class="form-group">
+                    <label>Tray Spare Capacity (%)</label>
+                    <input type="number" id="spare" value="20" min="0" max="100">
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button class="btn" style="flex: 1;" onclick="calc()">Evaluate</button>
+                    <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                </div>
+            </div>
             
-            <aside class="sidePanel">
-                <div class="card">
-                    <h2>Current Stage Monitor</h2>
-                    <div id="monitor" class="out"></div>
-                </div>
-                
-                <div class="card">
-                    <h2>Decision Output</h2>
-                    <div style="margin-bottom: 1rem;">
-                        <label for="ownerApprove" style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">Owner Approval Granted?</label>
-                        <select id="ownerApprove" style="width:100%; margin-top:4px; padding:0.5rem; border:1px solid #d1d5db; border-radius:4px; background:#f9fafb;">
-                            <option>Yes</option>
-                            <option>No</option>
-                        </select>
-                    </div>
-                    <div id="output" class="out"></div>
-                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <button class="btn" style="flex: 1;" onclick="calc()">Evaluate</button>
-                        <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
-                    </div>
-                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="window.print()">Print Report / PDF</button>
-                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" id="btn-export-excel">≡ƒôè Export to Excel</button>
-                </div>
-                
-                <div class="card">
-                    <h2>Owner Notes</h2>
-                    <textarea id="notes-input" placeholder="Record layout exceptions or special project notes here..."></textarea>
-                </div>
-            </aside>
-        </div>
+            <div class="card">
+                <h2>Decision Output</h2>
+                <div id="output" class="out"></div>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-export-excel">Export to Excel</button>
+            </div>
+            
+        </aside>
         
-        <div class="card">
-            <h2>Stage Identification</h2>
-            <table>
-                <tr><th>ID</th><th>Stage</th><th>Purpose</th></tr>
-                <tr><td>S01</td><td>Start Cable Routing Planning</td><td>Begin common routing decision workflow.</td></tr>
-                <tr><td>S02</td><td>Early Common Design Principles</td><td>Set common basis before discipline-by-discipline routing.</td></tr>
-                <tr><td>S03</td><td>Area Selection</td><td>Select Outdoor, Indoor, or Control Room.</td></tr>
-                <tr><td>S04A / S04B</td><td>Area Philosophy</td><td>Outdoor is more flexible; Indoor / Control Room has very limited sharing.</td></tr>
-                <tr><td>S05</td><td>System Type Selection</td><td>Select primary and shared-with systems inline.</td></tr>
-                <tr><td>S06</td><td>Same Tray Decision</td><td>Decide if common tray is considered.</td></tr>
-                <tr><td>S07</td><td>Separator Check</td><td>Confirm if separator is required and applied.</td></tr>
-                <tr><td>S08</td><td>Construction Schedule</td><td>Confirm if installation phase is compatible.</td></tr>
-                <tr><td>S09</td><td>Spare Review</td><td>Check tray spare percentage and separation review.</td></tr>
-                <tr><td>S10</td><td>Final Route Model and Owner</td><td>Finalize typical route model and decision owner.</td></tr>
-            </table>
-        </div>
-        
-        <div class="card">
-            <h2>Reference: System Classification</h2>
-            <table id="refTable"></table>
-        </div>
-        
-        <div class="card" style="margin-bottom: 3rem;">
-            <h2>Decision Rules</h2>
-            <table>
-                <tr><th>Rule</th><th>Logic Applied</th></tr>
-                <tr><td>Area override</td><td>Indoor and Control Room are treated as very limited sharing. Sharing is generally rejected unless project-specific approval is granted.</td></tr>
-                <tr><td>FO cable</td><td>FO cable is generally shareable, but area and construction schedule checks still apply.</td></tr>
-                <tr><td>Power 400/230V or Beacon 230V</td><td>Sharing is limited. If same tray is considered, separator and separation review are required.</td></tr>
-                <tr><td>Speaker 100V</td><td>Speaker 100V shall be separated from UTP and low-level signal systems.</td></tr>
-                <tr><td>UTP / Signal under 24V</td><td>UTP and low-level signal systems are mostly not shareable with power or 100V speaker.</td></tr>
-                <tr><td>Schedule check</td><td>If same tray installation is in different construction phases, sharing is rejected for constructability reasons.</td></tr>
-            </table>
-        </div>
-    </main>
+        <section class="mainArea">
+            <div id="mermaid-container"></div>
+        </section>
+    </div>
 
-<script>
-const systems={
-    "FO Cable":['Voltage independent','Telecom','Generally Shareable','Normally shareable subject to route and installation protection.'],
-    "Power 400/230V":['400V or below','Electrical','Limited Sharing','Separator and separation review typically required when sharing.'],
-    "Beacon 230V":['400V or below','Electrical','Limited Sharing','Treat similar to LV power.'],
-    "Speaker 100V":['100V or below','Telecom','Normally Separated','Separate from UTP and low-level signal systems.'],
-    "Beacon 24-48V":['60V or below','Instrument','Mostly Not Shareable','Low voltage signal/control category.'],
-    "Call Station 24-48V":['60V or below','Instrument','Mostly Not Shareable','Low voltage signal/control category.'],
-    "Analog Tel 24-48V":['60V or below','Telecom','Mostly Not Shareable','Low voltage telecom/signal category.'],
-    "UTP 5V":['60V or below','Telecom','Mostly Not Shareable','Sensitive data cable. Separate from 100V speaker and power.'],
-    "Signal under 24V":['60V or below','Instrument','Mostly Not Shareable','Sensitive signal cable. Separate from 100V speaker and power.']
-};
-const ids=['n1','n2','n3','n4a','n4b','n5','n6','n7r','n7','n8','n9','n10'];
-const lines=['l1','l2','l3out','l3in','l4a','l4b','l5','l6no','l6yes','l7bad','l7ok','l8bad','l8ok','l9'];
+    <script>
+        const baseMmd = `flowchart TD
+    A[Start Integrated Cable Routing] --> B[Set Common Routing Philosophy]
+    B --> C[Freeze Early Design Criteria]
 
-function fill(id,arr){
-    let s=document.getElementById(id);
-    s.innerHTML='';
-    arr.forEach(v=>s.add(new Option(v,v)))
-}
-function low(s){
-    return ['UTP 5V','Signal under 24V','Beacon 24-48V','Call Station 24-48V','Analog Tel 24-48V'].includes(s)
-}
-function power(s){
-    return ['Power 400/230V','Beacon 230V'].includes(s)
-}
-function badge(v){
-    let c='na'; 
-    if(['Yes','Acceptable','Completed','Common sharing route can proceed'].includes(v))c='yes'; 
-    if(['No','Required','Rejected','Dedicated or separated route recommended'].includes(v))c='no'; 
-    if(['Mandatory','Review Required','Active'].includes(v))c='warn'; 
-    return `<span class="badge ${c}">${v}</span>`
-}
-function clearMarks(){
-    ids.forEach(i=>document.getElementById(i).classList.remove('activeNode','doneNode','stopNode'));
-    lines.forEach(i=>document.getElementById(i).classList.remove('active','done','stop'))
-}
-function mark(a,c){
-    a.forEach(i=>document.getElementById(i).classList.add(c))
-}
-function buildRef(){
-    let h='<tr><th>System Type</th><th>Voltage Category</th><th>Discipline</th><th>Default Sharing Philosophy</th><th>Notes</th></tr>';
-    Object.entries(systems).forEach(([k,v])=>{
-        h+=`<tr><td>${k}</td><td>${v[0]}</td><td>${v[1]}</td><td>${v[2]}</td><td>${v[3]}</td></tr>`
-    });
-    document.getElementById('refTable').innerHTML=h
-}
-let currentOutputs = {};
-function calc(){
-    let area=areaEl.value,p=primary.value,sh=shared.value,same=sameEl.value,sepv=sep.value,sch=sched.value,sp=+spare.value||0;
-    let ownerApprove = document.getElementById('ownerApprove').value;
+    C --> C1[Cable Classification]
+    C --> C2[Tray / Trench Rules]
+    C --> C3[Separation Criteria]
+    C --> C4[Tray Spare Requirement]
+    C --> C5[Typical Route Models]
+
+    C1 --> D[Classify Installation Area]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D --> IN[Indoor / Controlled Area]
+    D --> OUT[Outdoor / AG Area]
+
+    subgraph SG_IN[Indoor / Controlled Area]
+        direction TB
+        IN --> IF1[FO Cable]
+        IN --> IF2["≤400 V<br/>Power / Beacon"]
+        IN --> IF3["≤100 V<br/>Speaker"]
+        IN --> IF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        IF1 --> IR1[Shareable with E / I]
+        IF2 --> IR2[Shareable with E / I]
+        IF3 --> IR3[Separate Route Required]
+        IF4 --> IR4[No Electrical Sharing]
+        IR4 --> IR5["Limited I Sharing<br/>Rack / Control / Lab Only"]
+
+        IR1 --> IC[Indoor Sharing Candidate]
+        IR2 --> IC
+        IR5 --> IC
+    end
+
+    subgraph SG_OUT[Outdoor / AG Area]
+        direction TB
+        OUT --> OF1[FO Cable]
+        OUT --> OF2["≤400 V<br/>Power / Beacon"]
+        OUT --> OF3["≤100 V<br/>Speaker"]
+        OUT --> OF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        OF1 --> OR1[Shareable with E / I]
+        OF2 --> OR2[Shareable with E / I]
+        OF3 --> OR3[Separate Route Required]
+        OF4 --> OR4[No Electrical Sharing]
+        OR4 --> OR5[I Sharing by Engineering Review]
+
+        OR1 --> OC[Outdoor Sharing Candidate]
+        OR2 --> OC
+        OR5 --> OC
+    end
+
+    IR3 --> SEP[Separate Tray / Trench]
+    OR3 --> SEP
+
+    IC --> E{Owner Approval?}
+    OC --> E
+
+    E -->|No| SEP
+    E -->|Yes| F{Same Tray / Trench?}
+
+    F -->|No| SEP
+    F -->|Yes| G{Separator Required?}
+
+    G -->|Yes| H[Apply Separator / Partition]
+    G -->|No| I[No Separator if Approved]
+
+    H --> J{Construction Sequence OK?}
+    I --> J
+
+    J -->|No| SEP
+    J -->|Yes| K[Shared Routing Accepted]
+
+    SEP --> SX[Set E / I / C Layout Strategy]
+    SX --> SX1[Layout Type: Separated]
+    SX1 --> SX2[Coordinate E / I Drawings]
+    SX2 --> SX3[Select Favorable Communication Route]
+    SX3 --> SX4[Update Typical Route Model]
+
+    K --> L[Engineering Verification]
+    L --> L1[Separation Distance]
+    L1 --> L2[Tray / Trench Capacity]
+    L2 --> L3{Tray Spare Available?}
+
+    L3 -->|No| L3A["Increase Tray Size<br/>or Adjust Route"]
+    L3A --> L2
+
+    L3 -->|Yes| L4[Pulling Sequence]
+    L4 --> L5[Tray Cover / Backfill Constraint]
+
+    B --> M[Set Initial E / I / C Layout Strategy]
+    M --> N{Initial Layout Type}
+
+    N -->|Integrated| O[Preferred Common Route]
+    N -->|Separated| P[Coordinate E / I Drawings]
+    P --> P1[Select Favorable Communication Route]
+    P1 --> P2[Align Subcontractor if Possible]
+
+    O --> Q[Finalize Typical Route Model]
+    P2 --> Q
+    SX4 --> Q
+    L5 --> Q
+
+    Q --> R[Route Decision Authority]
+    R --> S[Final Owner / Discipline Approval]
+    S --> T[Approved Routing Design]
+
+    classDef process fill:#EAF3FF,stroke:#1F4E79,color:#000,font-weight:bold;
+    classDef decision fill:#FFF1C2,stroke:#F9A825,color:#000,font-weight:bold;
+    classDef accept fill:#DDF4E4,stroke:#2E7D32,color:#000,font-weight:bold;
+    classDef reject fill:#FADADA,stroke:#C62828,color:#000,font-weight:bold;
+    classDef final fill:#E2F0D9,stroke:#548235,color:#000,font-weight:bold;
+    classDef area fill:#F3F7FB,stroke:#5B9BD5,color:#000,font-weight:bold;
+    classDef sepPath fill:#FCE4D6,stroke:#C65911,color:#000,font-weight:bold;
+
+    class A,B,C,C1,C2,C3,C4,C5,D,L,L1,L2,L4,L5,M,Q,R,S process;
+    class E,F,G,J,N,L3 decision;
+    class IR1,IR2,IR5,OR1,OR2,OR5,IC,OC,K,O accept;
+    class IR3,OR3,IR4,OR4,SEP reject;
+    class IN,OUT,IF1,IF2,IF3,IF4,OF1,OF2,OF3,OF4,P,P1,P2 area;
+    class SX,SX1,SX2,SX3,SX4,L3A sepPath;
+    class T final;
     
-    let indoor = (area != 'Outdoor');
-    let hasFO = (p == 'FO Cable' || sh == 'FO Cable');
-    let pow = power(p) || power(sh);
-    let hasSpeaker = (p == 'Speaker 100V' || sh == 'Speaker 100V');
-    let lo = low(p) || low(sh);
+    classDef activeNode fill:#1a73e8,stroke:#0d47a1,color:#fff,stroke-width:3px;
+    classDef doneNode fill:#34a853,stroke:#1b5e20,color:#fff,stroke-width:2px;
+    classDef badNode fill:#ea4335,stroke:#b71c1c,color:#fff,stroke-width:3px;
+`;
+        
+        let systems = {
+            'FO Cable': ['Telecom', 'No issue', 0],
+            'UTP 5V': ['Telecom', 'Low Voltage (<60V)', 5],
+            'Signal under 24V': ['Instrument', 'Low Voltage (<60V)', 24],
+            'Beacon 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Call Station 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Analog Tel 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Speaker 100V': ['Telecom', 'Audio (100V)', 100],
+            'Power 400/230V': ['Electrical', 'High Voltage (>60V)', 400],
+            'Beacon 230V': ['Telecom', 'High Voltage (>60V)', 230]
+        };
+        
+        function fill(id, opts) {
+            document.getElementById(id).innerHTML = opts.map(o => `<option>${o}</option>`).join('');
+        }
+        
+        fill('area', ['Outdoor', 'Indoor', 'Control Room']);
+        fill('primary', Object.keys(systems));
+        fill('shared', Object.keys(systems));
+        fill('same', ['Yes', 'No']);
+        fill('sep', ['Yes', 'No', 'Not Applicable']);
+        fill('sched', ['Same Phase', 'Different Phase']);
+        
+        let power = (s) => systems[s][2] > 60 && systems[s][1] != 'Audio (100V)';
+        let low = (s) => systems[s][2] <= 60 && systems[s][2] > 0;
 
-    let schOk = (sch == 'Same Phase') ? 'Yes' : 'No';
-    
-    let systemConflict = false;
-    let conflictReason = "None";
-    if (hasSpeaker) {
-        systemConflict = true;
-        conflictReason = "Speaker 100V sharing not allowed";
-    } else if (lo) {
-        if (indoor) {
-            if (pow) {
+        function calc() {
+            let area = document.getElementById('area').value;
+            let p = document.getElementById('primary').value;
+            let sh = document.getElementById('shared').value;
+            let same = document.getElementById('same').value;
+            let sepv = document.getElementById('sep').value;
+            let sch = document.getElementById('sched').value;
+            let sp = +document.getElementById('spare').value || 0;
+            let ownerApprove = document.getElementById('ownerApprove').value;
+            
+            let indoor = (area != 'Outdoor');
+            let hasFO = (p == 'FO Cable' || sh == 'FO Cable');
+            let pow = power(p) || power(sh);
+            let hasSpeaker = (p == 'Speaker 100V' || sh == 'Speaker 100V');
+            let lo = low(p) || low(sh);
+            let schOk = (sch == 'Same Phase') ? 'Yes' : 'No';
+            
+            let systemConflict = false;
+            let conflictReason = "None";
+            if (hasSpeaker) {
                 systemConflict = true;
-                conflictReason = "Electrical sharing not recommended for 60V or below indoors";
-            } else if (area == 'Indoor') {
-                systemConflict = true;
-                conflictReason = "Inst sharing possible only in Control Room/Rack Room";
+                conflictReason = "Speaker 100V sharing not allowed";
+            } else if (lo) {
+                if (indoor) {
+                    if (pow) {
+                        systemConflict = true;
+                        conflictReason = "Electrical sharing not recommended for 60V or below indoors";
+                    } else if (area == 'Indoor') {
+                        systemConflict = true;
+                        conflictReason = "Inst sharing possible only in Control Room/Rack Room";
+                    }
+                } else {
+                    if (pow) {
+                        systemConflict = true;
+                        conflictReason = "No Electrical sharing allowed for 60V or below outdoors";
+                    }
+                }
             }
-        } else {
-            // Outdoor
-            if (pow) {
-                systemConflict = true;
-                conflictReason = "No Electrical sharing allowed for 60V or below outdoors";
+
+            let sepReq = 'Not Applicable';
+            if (same == 'Yes') {
+                if (pow || hasFO || (lo && !indoor)) sepReq = 'Yes';
+            }
+            
+            let sharing = 'Yes';
+            if (same == 'No' || ownerApprove == 'No' || systemConflict || schOk == 'No' || (sepReq == 'Yes' && sepv != 'Yes')) {
+                sharing = 'No';
+            }
+            
+            let review = (same == 'Yes') ? ((pow || hasFO || (lo && !indoor)) ? 'Yes' : 'No') : 'No';
+            let dedicated = (sharing == 'Yes') ? 'No' : 'Yes';
+
+            let model = area == 'Outdoor' ? (dedicated == 'Yes' ? 'TR-02 Roadside Tray or Trench' : 'TR-01 Outdoor Common Route') : (area == 'Indoor' ? 'TR-03 Building Entry Segregated Route' : 'TR-04 Control Room Dedicated Route');
+            let owner = area == 'Control Room' ? 'Engineering Manager' : (dedicated == 'Yes' ? 'Common Route Lead' : ([p, sh].some(x => ['FO Cable', 'Speaker 100V', 'UTP 5V'].includes(x)) ? 'Telecom Lead' : (pow ? 'Electrical Lead' : 'Instrument Lead')));
+            
+            let out = [
+                ['Sharing Allowed', sharing],
+                ['Separator Mandatory', sepReq == 'Yes' ? 'Mandatory' : sepReq],
+                ['Dedicated Tray Required', dedicated == 'Yes' ? 'Required' : 'No'],
+                ['Separation Review Required', review == 'Yes' ? 'Review Required' : 'No'],
+                ['Construction Schedule Compatible', schOk],
+                ['Tray Spare Status', sp >= 20 ? 'Acceptable' : 'Increase Tray Size or Adjust Route'],
+                ['Typical Route Model', model],
+                ['Final Decision Owner', owner]
+            ];
+            if (sharing == 'No') out.push(['Layout Strategy', 'Layout Type: Separated -> Coordinate E/I Drawings']);
+            
+            document.getElementById('output').innerHTML = out.map(r => `<div>${r[0]}</div><div><span class="badge ${r[1]=='No'?'no':'yes'}">${r[1]}</span></div>`).join('');
+            
+            // Generate Path for Mermaid
+            let done = ['A','B','C','C1','C2','C3','C4','C5','D','M','N'];
+            let active = [];
+            let bad = [];
+            
+            if (indoor) {
+                done.push('IN');
+                if (hasFO) done.push('IF1', 'IR1', 'IC');
+                if (pow) done.push('IF2', 'IR2', 'IC');
+                if (hasSpeaker) done.push('IF3', 'IR3');
+                if (lo) done.push('IF4', 'IR4', 'IR5', 'IC');
+            } else {
+                done.push('OUT');
+                if (hasFO) done.push('OF1', 'OR1', 'OC');
+                if (pow) done.push('OF2', 'OR2', 'OC');
+                if (hasSpeaker) done.push('OF3', 'OR3');
+                if (lo) done.push('OF4', 'OR4', 'OR5', 'OC');
+            }
+            
+            if (hasSpeaker) {
+                bad.push('IR3', 'OR3');
+                done.push('SEP');
+            }
+            if (lo && indoor && pow) { bad.push('IR4'); done.push('SEP'); } // Simplification of conflict mapping
+            
+            if (!systemConflict) {
+                if (indoor && (hasFO || pow || lo)) done.push('E');
+                if (!indoor && (hasFO || pow || lo)) done.push('E');
+                
+                if (ownerApprove == 'No') {
+                    bad.push('E');
+                    done.push('SEP');
+                } else {
+                    done.push('F');
+                    if (same == 'No') {
+                        bad.push('F');
+                        done.push('SEP');
+                    } else {
+                        done.push('G');
+                        if (sepReq == 'Yes') {
+                            done.push('H');
+                            if (sepv != 'Yes') { bad.push('H'); done.push('SEP'); }
+                            else { done.push('J'); }
+                        } else {
+                            done.push('I', 'J');
+                        }
+                        
+                        if (schOk == 'No') {
+                            bad.push('J');
+                            done.push('SEP');
+                        } else if (sharing == 'Yes') {
+                            done.push('K', 'L', 'L1', 'L2', 'L3');
+                            if (sp < 20) {
+                                done.push('L3A');
+                            }
+                            done.push('L4', 'L5');
+                        }
+                    }
+                }
+            }
+            
+            if (sharing == 'No') {
+                done.push('SX', 'SX1', 'SX2', 'SX3', 'SX4', 'P', 'P1', 'P2');
+                active.push('SEP');
+            } else {
+                done.push('O');
+                active.push('K', 'L5', 'O');
+            }
+            
+            done.push('Q', 'R', 'S', 'T');
+            active.push('T');
+            
+            // Build final MMD
+            let finalMmd = baseMmd;
+            if (done.length > 0) finalMmd += "\nclass " + done.join(',') + " doneNode;";
+            if (active.length > 0) finalMmd += "\nclass " + active.join(',') + " activeNode;";
+            if (bad.length > 0) finalMmd += "\nclass " + bad.join(',') + " badNode;";
+            
+            renderMermaid(finalMmd);
+        }
+        
+        async function renderMermaid(mmdString) {
+            if (window.mermaid) {
+                try {
+                    const { svg } = await window.mermaid.render('mermaid-svg', mmdString);
+                    document.getElementById('mermaid-container').innerHTML = svg;
+                } catch (e) {
+                    console.error("Mermaid render error:", e);
+                }
             }
         }
-    }
-
-    let sepReq = 'Not Applicable';
-    if (same == 'Yes') {
-        if (pow || hasFO || (lo && !indoor)) sepReq = 'Yes';
-    }
-    
-    let sharing = 'Yes';
-    if (same == 'No' || ownerApprove == 'No' || systemConflict || schOk == 'No' || (sepReq == 'Yes' && sepv != 'Yes')) {
-        sharing = 'No';
-    }
-    
-    let review = (same == 'Yes') ? ((pow || hasFO || (lo && !indoor)) ? 'Yes' : 'No') : 'No';
-    let dedicated = (sharing == 'Yes') ? 'No' : 'Yes';
-
-    let model=area=='Outdoor'?(dedicated=='Yes'?'TR-02 Roadside Tray or Trench':'TR-01 Outdoor Common Route'):(area=='Indoor'?'TR-03 Building Entry Segregated Route':'TR-04 Control Room Dedicated Route');
-    let owner=area=='Control Room'?'Engineering Manager':(dedicated=='Yes'?'Common Route Lead':([p,sh].some(x=>['FO Cable','Speaker 100V','UTP 5V'].includes(x))?'Telecom Lead':(pow?'Electrical Lead':'Instrument Lead')));
-    
-    let out=[
-        ['Owner Approval',badge(ownerApprove)],
-        ['Sharing Allowed',badge(sharing)],
-        ['Separator Mandatory',badge(sepReq=='Yes'?'Mandatory':sepReq)],
-        ['Dedicated Tray Required',badge(dedicated=='Yes'?'Required':'No')],
-        ['Separation Review Required',badge(review=='Yes'?'Review Required':'No')],
-        ['Construction Schedule Compatible',badge(schOk)],
-        ['Tray Spare Status',badge(sp>=20?'Acceptable':'Increase Tray Size or Adjust Route')],
-        ['Typical Route Model',model],
-        ['Final Decision Owner',owner]
-    ];
-    if (sharing == 'No') {
-        out.push(['Layout Strategy', 'Layout Type: Separated -> Coordinate E/I Drawings']);
-    }
-    output.innerHTML=out.map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join('');
-    
-    clearMarks();
-    let ns=['n1','n2','n3'],ls=['l1','l2'],stage='S03 Area Selection',stat='Active'; 
-    if(area=='Outdoor'){
-        ns.push('n4a'); ls.push('l3out','l4a');
-    }else{
-        ns.push('n4b'); ls.push('l3in','l4b');
-    }
-    ns.push('n5','n6'); ls.push('l5'); 
-    
-    if(same=='No' || ownerApprove=='No'){
-        ls.push('l6no');
-        mark(ns,'doneNode'); mark(ls,'done');
-        mark(['n7r'],'activeNode'); mark(['l6no'],'active');
-        stage='S07R Separate Tray / Trench'; stat='Rejected';
-    }else{
-        ls.push('l6yes');
-        ns.push('n7');
-        if(systemConflict || (sepReq == 'Yes' && sepv != 'Yes')){
-            mark(ns,'doneNode'); mark(ls,'done');
-            mark(['n7','n7r'],'stopNode'); mark(['l7bad'],'stop');
-            stage='S07 Separator / Area Restriction'; stat='Rejected';
-        }else{
-            ls.push('l7ok'); ns.push('n8');
-            if(schOk == 'No'){
-                mark(ns,'doneNode'); mark(ls,'done');
-                mark(['n8','n7r'],'stopNode'); mark(['l8bad'],'stop');
-                stage='S08 Schedule Not Compatible'; stat='Rejected';
-            }else{
-                ls.push('l8ok'); ns.push('n9'); ls.push('l9'); ns.push('n10');
-                mark(ns, 'doneNode'); mark(ls, 'done');
-                mark(['n10'], 'activeNode'); mark(['l9'], 'active');
-                stage=(sharing=='Yes') ? 'S10 Finalize Route Model and Owner' : 'S10 Finalize Route Model and Owner (Dedicated)'; stat='Completed';
-            }
-        }
-    }
-    
-    currentOutputs = {
-        sharing: sharing,
-        sepReq: sepReq,
-        dedicated: dedicated,
-        review: review,
-        schedOk: schOk,
-        model: model,
-        owner: owner,
-        ownerApprove: ownerApprove,
-        summary: sharing == 'Yes' ? 'Sharing acceptable. Apply stated separator and review requirements.' : 'Sharing not recommended. Use dedicated tray or trench. (Coordinate E/I Drawings)'
-    };
-    
-    let primCategory = systems[p][0];
-    let sharedCategory = systems[sh][0];
-    let primPhilosophy = systems[p][2];
-    let sharedPhilosophy = systems[sh][2];
-    let powerInvolved = pow ? 'Yes' : 'No';
-    let lowSignalInvolved = lo ? 'Yes' : 'No';
-    let indoorRestriction = indoor ? 'Yes (Restricted)' : 'No';
-    
-    monitor.innerHTML=[
-        ['Current Status',badge(stat)],
-        ['Stage ID & Name',stage],
-        ['Area Classification',area],
-        ['Primary Cable Type',`${p} (${primCategory})`],
-        ['Shared Cable Type',`${sh} (${sharedCategory})`],
-        ['Same Tray Considered',same],
-        ['Separator Required',badge(sepReq=='Yes'?'Yes':sepReq)],
-        ['Construction Schedule Compatible',badge(schOk)],
-        ['System Conflict', badge(systemConflict ? conflictReason : 'None')],
-        ['Tray Spare Capacity Status',badge(sp>=20?'Acceptable':'Review Required')],
-        ['Routing Recommendation',badge(sharing=='Yes'?'Common sharing route can proceed':'Dedicated or separated route recommended')]
-    ].map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join('');
-}
-function resetForm(){
-    areaEl.value='Outdoor';
-    primary.value='FO Cable';
-    shared.value='Power 400/230V';
-    sameEl.value='Yes';
-    sep.value='Yes';
-    sched.value='Same Phase';
-    spare.value=20;
-    if(document.getElementById('ownerApprove')) document.getElementById('ownerApprove').value='Yes';
-    calc()
-}
-let areaEl=document.getElementById('area'),sameEl=document.getElementById('same');
-let primary=document.getElementById('primary'),shared=document.getElementById('shared');
-let sep=document.getElementById('sep'),sched=document.getElementById('sched'),spare=document.getElementById('spare');
-let monitor=document.getElementById('monitor'),output=document.getElementById('output');
-
-fill('area',['Outdoor','Indoor','Control Room']);
-fill('primary',Object.keys(systems));
-fill('shared',Object.keys(systems));
-fill('same',['Yes','No']);
-fill('sep',['Yes','No','Not Applicable']);
-fill('sched',['Same Phase','Different Phase']);
-
-['area','primary','shared','same','sep','sched','spare','ownerApprove'].forEach(i=>{
-    let el = document.getElementById(i);
-    if(el) el.addEventListener('change',calc);
-});
-buildRef();
-resetForm();
-
-document.getElementById('btn-export-excel').addEventListener('click', async () => {
-    const inputs = {
-        area: areaEl.value,
-        primary: primary.value,
-        shared: shared.value,
-        same: sameEl.value,
-        sep: sep.value,
-        sched: sched.value,
-        spare: parseFloat(spare.value) || 20,
-        ownerApprove: document.getElementById('ownerApprove').value,
-        notes: document.getElementById('notes-input').value
-    };
-
-    try {
-        // Fallback for file:/// direct browser rendering: fetch absolute path
-        const apiBase = window.location.protocol.startsWith('file') ? 'http://127.0.0.1:5000' : '';
-        const response = await fetch(`${apiBase}/api/cable-routing/export-excel`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ inputs: inputs, outputs: currentOutputs })
+        
+        ['area', 'primary', 'shared', 'same', 'sep', 'sched', 'spare', 'ownerApprove'].forEach(id => {
+            document.getElementById(id).addEventListener('change', calc);
         });
         
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = "Cable_Routing_Decision_Output.xlsx";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } else {
-            const errDetail = await response.text();
-            alert("Failed to export Excel file: " + errDetail.substring(0, 100));
+        function resetForm() {
+            document.getElementById('area').value = 'Outdoor';
+            document.getElementById('primary').value = 'FO Cable';
+            document.getElementById('shared').value = 'Power 400/230V';
+            document.getElementById('ownerApprove').value = 'Yes';
+            document.getElementById('same').value = 'Yes';
+            document.getElementById('sep').value = 'Yes';
+            document.getElementById('sched').value = 'Same Phase';
+            document.getElementById('spare').value = 20;
+            calc();
         }
-    } catch (err) {
-        console.error("Excel export network error:", err);
-        alert("Network error exporting Excel. Ensure the Flask server is running at http://127.0.0.1:5000");
-    }
-});
-</script>
+        
+        // Initial render trigger after mermaid loads
+        setTimeout(() => resetForm(), 1000);
+        
+        document.getElementById('btn-export-excel').addEventListener('click', async () => {
+            const inputs = {
+                area: document.getElementById('area').value,
+                primary: document.getElementById('primary').value,
+                shared: document.getElementById('shared').value,
+                same: document.getElementById('same').value,
+                sep: document.getElementById('sep').value,
+                sched: document.getElementById('sched').value,
+                spare: parseFloat(document.getElementById('spare').value) || 20,
+                ownerApprove: document.getElementById('ownerApprove').value
+            };
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/cable-routing/export-excel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inputs: inputs })
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Cable_Routing_Decision_Output.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Export failed. Make sure app.py is running.');
+                }
+            } catch (err) {
+                alert('Export failed. ' + err);
+            }
+        });
+        
+    </script>
 </body>
 </html>
