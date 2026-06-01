@@ -618,21 +618,18 @@ function calc(){
             }else{
                 ls.push('l8ok');
                 ns.push('n9');
+                ls.push('l9');
+                ns.push('n10');
+                mark(ns, 'doneNode');
+                mark(ls, 'done');
+                mark(['n10'], 'activeNode');
+                mark(['l9'], 'active');
                 if(sharing=='Yes'){
-                    ls.push('l9');
-                    ns.push('n10');
-                    mark(ns,'doneNode');
-                    mark(ls,'done');
-                    mark(['n10'],'activeNode');
-                    mark(['l9'],'active');
                     stage='S10 Finalize Route Model and Owner';
-                    stat='Completed'
+                    stat='Completed';
                 }else{
-                    mark(ns,'doneNode');
-                    mark(ls,'done');
-                    mark(['n9'],'activeNode');
-                    stage='S09 Review Result Requires Dedicated Route';
-                    stat='Rejected'
+                    stage='S10 Finalize Route Model and Owner (Dedicated Route Required)';
+                    stat='Completed';
                 }
             }
         }
