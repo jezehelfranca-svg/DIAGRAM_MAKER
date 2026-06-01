@@ -545,8 +545,8 @@ textarea:focus {
                         <rect id="n2" x="385" y="95" width="330" height="55" rx="8" class="check"/><circle cx="400" cy="110" r="13" class="idc"/><text x="400" y="114" text-anchor="middle" class="idt">S02</text><text x="550" y="118" text-anchor="middle" class="txt ttl">Early Common Design Principles</text><text x="550" y="137" text-anchor="middle" class="txt">E / I / T common route basis</text><path id="l2" d="M550 150 L550 180" class="arr"/>
                         <polygon id="n3" points="550,180 700,235 550,290 400,235" class="dec"/><circle cx="435" cy="212" r="13" class="idc"/><text x="435" y="216" text-anchor="middle" class="idt">S03</text><text x="550" y="213" text-anchor="middle" class="txt ttl">Classify Area</text><text x="550" y="231" text-anchor="middle" class="txt">Area input selection</text><foreignObject x="462" y="240" width="176" height="34"><select id="area"></select></foreignObject>
                         <path id="l3out" d="M400 235 L190 235 L190 330" class="arr"/><text x="285" y="225" class="txt">Outdoor</text><path id="l3in" d="M700 235 L905 235 L905 330" class="arr"/><text x="760" y="225" class="txt">Indoor / Control Room</text>
-                        <rect id="n4a" x="60" y="330" width="260" height="60" rx="8" class="node"/><circle cx="75" cy="345" r="13" class="idc"/><text x="75" y="349" text-anchor="middle" class="idt">S04A</text><text x="190" y="354" text-anchor="middle" class="txt ttl">Outdoor Area</text><text x="190" y="374" text-anchor="middle" class="txt">More flexible with review</text>
-                        <rect id="n4b" x="775" y="330" width="260" height="60" rx="8" class="bad"/><circle cx="790" cy="345" r="13" class="idc"/><text x="790" y="349" text-anchor="middle" class="idt">S04B</text><text x="905" y="354" text-anchor="middle" class="txt ttl">Indoor / Control Room</text><text x="905" y="374" text-anchor="middle" class="txt">Very limited sharing</text>
+                        <rect id="n4a" x="60" y="330" width="260" height="60" rx="8" class="node"/><circle cx="75" cy="345" r="13" class="idc"/><text x="75" y="349" text-anchor="middle" class="idt">S04A</text><text x="190" y="354" text-anchor="middle" class="txt ttl">Outdoor / AG Area</text><text x="190" y="374" text-anchor="middle" class="txt">More flexible with review</text>
+                        <rect id="n4b" x="775" y="330" width="260" height="60" rx="8" class="bad"/><circle cx="790" cy="345" r="13" class="idc"/><text x="790" y="349" text-anchor="middle" class="idt">S04B</text><text x="905" y="354" text-anchor="middle" class="txt ttl">Indoor / Controlled Area</text><text x="905" y="374" text-anchor="middle" class="txt">Very limited sharing</text>
                         <path id="l4a" d="M190 390 L190 500 L355 500" class="side"/><path id="l4b" d="M905 390 L905 500 L745 500" class="side"/>
                         <rect id="n5" x="355" y="455" width="390" height="135" rx="8" class="check"/><circle cx="370" cy="470" r="13" class="idc"/><text x="370" y="474" text-anchor="middle" class="idt">S05</text><text x="550" y="478" text-anchor="middle" class="txt ttl">Identify Cable System Type</text><foreignObject x="405" y="488" width="290" height="95"><select id="primary"></select><select id="shared" style="margin-top:5px"></select></foreignObject>
                         <path id="l5" d="M550 590 L550 620" class="arr"/>
@@ -572,6 +572,13 @@ textarea:focus {
                 
                 <div class="card">
                     <h2>Decision Output</h2>
+                    <div style="margin-bottom: 1rem;">
+                        <label for="ownerApprove" style="font-size:0.85rem; font-weight:bold; color:var(--text-muted);">Owner Approval Granted?</label>
+                        <select id="ownerApprove" style="width:100%; margin-top:4px; padding:0.5rem; border:1px solid #d1d5db; border-radius:4px; background:#f9fafb;">
+                            <option>Yes</option>
+                            <option>No</option>
+                        </select>
+                    </div>
                     <div id="output" class="out"></div>
                     <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                         <button class="btn" style="flex: 1;" onclick="calc()">Evaluate</button>
@@ -674,6 +681,7 @@ function buildRef(){
 let currentOutputs = {};
 function calc(){
     let area=areaEl.value,p=primary.value,sh=shared.value,same=sameEl.value,sepv=sep.value,sch=sched.value,sp=+spare.value||0;
+    let ownerApprove = document.getElementById('ownerApprove').value;
     
     let indoor = (area != 'Outdoor');
     let hasFO = (p == 'FO Cable' || sh == 'FO Cable');
@@ -697,6 +705,12 @@ function calc(){
                 systemConflict = true;
                 conflictReason = "Inst sharing possible only in Control Room/Rack Room";
             }
+        } else {
+            // Outdoor
+            if (pow) {
+                systemConflict = true;
+                conflictReason = "No Electrical sharing allowed for 60V or below outdoors";
+            }
         }
     }
 
@@ -706,7 +720,7 @@ function calc(){
     }
     
     let sharing = 'Yes';
-    if (same == 'No' || systemConflict || schOk == 'No' || (sepReq == 'Yes' && sepv != 'Yes')) {
+    if (same == 'No' || ownerApprove == 'No' || systemConflict || schOk == 'No' || (sepReq == 'Yes' && sepv != 'Yes')) {
         sharing = 'No';
     }
     
@@ -717,15 +731,19 @@ function calc(){
     let owner=area=='Control Room'?'Engineering Manager':(dedicated=='Yes'?'Common Route Lead':([p,sh].some(x=>['FO Cable','Speaker 100V','UTP 5V'].includes(x))?'Telecom Lead':(pow?'Electrical Lead':'Instrument Lead')));
     
     let out=[
+        ['Owner Approval',badge(ownerApprove)],
         ['Sharing Allowed',badge(sharing)],
         ['Separator Mandatory',badge(sepReq=='Yes'?'Mandatory':sepReq)],
         ['Dedicated Tray Required',badge(dedicated=='Yes'?'Required':'No')],
         ['Separation Review Required',badge(review=='Yes'?'Review Required':'No')],
         ['Construction Schedule Compatible',badge(schOk)],
-        ['Tray Spare Status',badge(sp>=20?'Acceptable':'Review Required')],
+        ['Tray Spare Status',badge(sp>=20?'Acceptable':'Increase Tray Size or Adjust Route')],
         ['Typical Route Model',model],
         ['Final Decision Owner',owner]
     ];
+    if (sharing == 'No') {
+        out.push(['Layout Strategy', 'Layout Type: Separated -> Coordinate E/I Drawings']);
+    }
     output.innerHTML=out.map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join('');
     
     clearMarks();
@@ -737,7 +755,7 @@ function calc(){
     }
     ns.push('n5','n6'); ls.push('l5'); 
     
-    if(same=='No'){
+    if(same=='No' || ownerApprove=='No'){
         ls.push('l6no');
         mark(ns,'doneNode'); mark(ls,'done');
         mark(['n7r'],'activeNode'); mark(['l6no'],'active');
@@ -772,7 +790,8 @@ function calc(){
         schedOk: schOk,
         model: model,
         owner: owner,
-        summary: sharing == 'Yes' ? 'Sharing acceptable. Apply stated separator and review requirements.' : 'Sharing not recommended. Use dedicated tray or trench.'
+        ownerApprove: ownerApprove,
+        summary: sharing == 'Yes' ? 'Sharing acceptable. Apply stated separator and review requirements.' : 'Sharing not recommended. Use dedicated tray or trench. (Coordinate E/I Drawings)'
     };
     
     let primCategory = systems[p][0];
@@ -805,6 +824,7 @@ function resetForm(){
     sep.value='Yes';
     sched.value='Same Phase';
     spare.value=20;
+    if(document.getElementById('ownerApprove')) document.getElementById('ownerApprove').value='Yes';
     calc()
 }
 let areaEl=document.getElementById('area'),sameEl=document.getElementById('same');
@@ -819,7 +839,10 @@ fill('same',['Yes','No']);
 fill('sep',['Yes','No','Not Applicable']);
 fill('sched',['Same Phase','Different Phase']);
 
-['area','primary','shared','same','sep','sched','spare'].forEach(i=>document.getElementById(i).addEventListener('change',calc));
+['area','primary','shared','same','sep','sched','spare','ownerApprove'].forEach(i=>{
+    let el = document.getElementById(i);
+    if(el) el.addEventListener('change',calc);
+});
 buildRef();
 resetForm();
 
@@ -832,6 +855,7 @@ document.getElementById('btn-export-excel').addEventListener('click', async () =
         sep: sep.value,
         sched: sched.value,
         spare: parseFloat(spare.value) || 20,
+        ownerApprove: document.getElementById('ownerApprove').value,
         notes: document.getElementById('notes-input').value
     };
 
