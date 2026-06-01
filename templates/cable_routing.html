@@ -51,7 +51,14 @@
         .out div { font-size: 0.9rem; padding: 0.25rem 0; }
         .out div:nth-child(odd) { font-weight: 600; color: var(--text-muted); margin-top: 0.5rem; }
         
+        
         #mermaid-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; }
+        
+        /* Edge Glow Filters */
+        .edgePath path { transition: all 0.3s ease; }
+        .edgePath path[style*="#1a73e8"] { filter: drop-shadow(0 0 6px rgba(26,115,232,0.6)); }
+        .edgePath path[style*="#ea4335"] { filter: drop-shadow(0 0 6px rgba(234,67,53,0.8)); }
+    
     </style>
 </head>
 <body>
@@ -284,6 +291,23 @@
         let power = (s) => systems[s][2] > 60 && systems[s][1] != 'Audio (100V)';
         let low = (s) => systems[s][2] <= 60 && systems[s][2] > 0;
 
+        
+        const edgeMap = {
+            'A-B': 0, 'B-C': 1, 'C-C1': 2, 'C-C2': 3, 'C-C3': 4, 'C-C4': 5, 'C-C5': 6,
+            'C1-D': 7, 'C2-D': 8, 'C3-D': 9, 'C4-D': 10, 'C5-D': 11, 'D-IN': 12, 'D-OUT': 13,
+            'IN-IF1': 14, 'IN-IF2': 15, 'IN-IF3': 16, 'IN-IF4': 17, 'IF1-IR1': 18, 'IF2-IR2': 19,
+            'IF3-IR3': 20, 'IF4-IR4': 21, 'IR4-IR5': 22, 'IR1-IC': 23, 'IR2-IC': 24, 'IR5-IC': 25,
+            'OUT-OF1': 26, 'OUT-OF2': 27, 'OUT-OF3': 28, 'OUT-OF4': 29, 'OF1-OR1': 30, 'OF2-OR2': 31,
+            'OF3-OR3': 32, 'OF4-OR4': 33, 'OR4-OR5': 34, 'OR1-OC': 35, 'OR2-OC': 36, 'OR5-OC': 37,
+            'IR3-SEP': 38, 'OR3-SEP': 39, 'IC-E': 40, 'OC-E': 41, 'E-|No| SEP': 42, 'E-|Yes| F': 43,
+            'F-|No| SEP': 44, 'F-|Yes| G': 45, 'G-|Yes| H': 46, 'G-|No| I': 47, 'H-J': 48, 'I-J': 49,
+            'J-|No| SEP': 50, 'J-|Yes| K': 51, 'SEP-SX': 52, 'SX-SX1': 53, 'SX1-SX2': 54, 'SX2-SX3': 55,
+            'SX3-SX4': 56, 'K-L': 57, 'L-L1': 58, 'L1-L2': 59, 'L2-L3': 60, 'L3-|No| L3A': 61,
+            'L3A-L2': 62, 'L3-|Yes| L4': 63, 'L4-L5': 64, 'B-M': 65, 'M-N': 66, 'N-|Integrated| O': 67,
+            'N-|Separated| P': 68, 'P-P1': 69, 'P1-P2': 70, 'O-Q': 71, 'P2-Q': 72, 'SX4-Q': 73,
+            'L5-Q': 74, 'Q-R': 75, 'R-S': 76, 'S-T': 77
+        };
+
         function calc() {
             let area = document.getElementById('area').value;
             let p = document.getElementById('primary').value;
@@ -353,62 +377,93 @@
             
             document.getElementById('output').innerHTML = out.map(r => `<div>${r[0]}</div><div><span class="badge ${r[1]=='No'?'no':'yes'}">${r[1]}</span></div>`).join('');
             
+            
             // Generate Path for Mermaid
             let done = ['A','B','C','C1','C2','C3','C4','C5','D','M','N'];
             let active = [];
             let bad = [];
             
+            // Generate Edges for Glow
+            let edges = ['A-B', 'B-C', 'C-C1', 'C-C2', 'C-C3', 'C-C4', 'C-C5', 'C1-D', 'C2-D', 'C3-D', 'C4-D', 'C5-D', 'B-M', 'M-N'];
+            let badEdges = [];
+            
             if (indoor) {
                 done.push('IN');
-                if (hasFO) done.push('IF1', 'IR1', 'IC');
-                if (pow) done.push('IF2', 'IR2', 'IC');
-                if (hasSpeaker) done.push('IF3', 'IR3');
-                if (lo) done.push('IF4', 'IR4', 'IR5', 'IC');
+                edges.push('D-IN');
+                if (hasFO) { done.push('IF1', 'IR1', 'IC'); edges.push('IN-IF1', 'IF1-IR1', 'IR1-IC'); }
+                if (pow) { done.push('IF2', 'IR2', 'IC'); edges.push('IN-IF2', 'IF2-IR2', 'IR2-IC'); }
+                if (hasSpeaker) { done.push('IF3', 'IR3'); edges.push('IN-IF3', 'IF3-IR3'); }
+                if (lo) { done.push('IF4', 'IR4', 'IR5', 'IC'); edges.push('IN-IF4', 'IF4-IR4', 'IR4-IR5', 'IR5-IC'); }
             } else {
                 done.push('OUT');
-                if (hasFO) done.push('OF1', 'OR1', 'OC');
-                if (pow) done.push('OF2', 'OR2', 'OC');
-                if (hasSpeaker) done.push('OF3', 'OR3');
-                if (lo) done.push('OF4', 'OR4', 'OR5', 'OC');
+                edges.push('D-OUT');
+                if (hasFO) { done.push('OF1', 'OR1', 'OC'); edges.push('OUT-OF1', 'OF1-OR1', 'OR1-OC'); }
+                if (pow) { done.push('OF2', 'OR2', 'OC'); edges.push('OUT-OF2', 'OF2-OR2', 'OR2-OC'); }
+                if (hasSpeaker) { done.push('OF3', 'OR3'); edges.push('OUT-OF3', 'OF3-OR3'); }
+                if (lo) { done.push('OF4', 'OR4', 'OR5', 'OC'); edges.push('OUT-OF4', 'OF4-OR4', 'OR4-OR5', 'OR5-OC'); }
             }
             
             if (hasSpeaker) {
                 bad.push('IR3', 'OR3');
                 done.push('SEP');
+                badEdges.push(indoor ? 'IR3-SEP' : 'OR3-SEP');
             }
-            if (lo && indoor && pow) { bad.push('IR4'); done.push('SEP'); } // Simplification of conflict mapping
+            if (lo && indoor && pow) { bad.push('IR4'); done.push('SEP'); }
             
             if (!systemConflict) {
-                if (indoor && (hasFO || pow || lo)) done.push('E');
-                if (!indoor && (hasFO || pow || lo)) done.push('E');
+                let reachedApproval = false;
+                if (indoor && (hasFO || pow || lo)) { done.push('E'); edges.push('IC-E'); reachedApproval = true; }
+                if (!indoor && (hasFO || pow || lo)) { done.push('E'); edges.push('OC-E'); reachedApproval = true; }
                 
-                if (ownerApprove == 'No') {
-                    bad.push('E');
-                    done.push('SEP');
-                } else {
-                    done.push('F');
-                    if (same == 'No') {
-                        bad.push('F');
+                if (reachedApproval) {
+                    if (ownerApprove == 'No') {
+                        bad.push('E');
                         done.push('SEP');
+                        badEdges.push('E-|No| SEP');
                     } else {
-                        done.push('G');
-                        if (sepReq == 'Yes') {
-                            done.push('H');
-                            if (sepv != 'Yes') { bad.push('H'); done.push('SEP'); }
-                            else { done.push('J'); }
-                        } else {
-                            done.push('I', 'J');
-                        }
-                        
-                        if (schOk == 'No') {
-                            bad.push('J');
+                        done.push('F');
+                        edges.push('E-|Yes| F');
+                        if (same == 'No') {
+                            bad.push('F');
                             done.push('SEP');
-                        } else if (sharing == 'Yes') {
-                            done.push('K', 'L', 'L1', 'L2', 'L3');
-                            if (sp < 20) {
-                                done.push('L3A');
+                            badEdges.push('F-|No| SEP');
+                        } else {
+                            done.push('G');
+                            edges.push('F-|Yes| G');
+                            if (sepReq == 'Yes') {
+                                done.push('H');
+                                edges.push('G-|Yes| H');
+                                if (sepv != 'Yes') { 
+                                    bad.push('H'); done.push('SEP'); 
+                                } else { 
+                                    done.push('J'); edges.push('H-J'); 
+                                }
+                            } else {
+                                done.push('I', 'J');
+                                edges.push('G-|No| I', 'I-J');
                             }
-                            done.push('L4', 'L5');
+                            
+                            if ((sepReq == 'Yes' && sepv == 'Yes') || sepReq != 'Yes') {
+                                if (schOk == 'No') {
+                                    bad.push('J');
+                                    done.push('SEP');
+                                    badEdges.push('J-|No| SEP');
+                                } else if (sharing == 'Yes') {
+                                    done.push('K', 'L', 'L1', 'L2', 'L3');
+                                    edges.push('J-|Yes| K', 'K-L', 'L-L1', 'L1-L2', 'L2-L3');
+                                    if (sp < 20) {
+                                        done.push('L3A');
+                                        edges.push('L3-|No| L3A', 'L3A-L2');
+                                    } else {
+                                        edges.push('L3-|Yes| L4');
+                                    }
+                                    done.push('L4', 'L5');
+                                    if (sp >= 20) edges.push('L4-L5');
+                                    else edges.push('L4-L5'); // Will still go to L5 from L4 if L3A resolved it? Wait, MMD says L3A -> L2. Loop happens. 
+                                    // For visual sake, let's just highlight both if sp < 20, because the loop eventually proceeds to L4 if resolved.
+                                    if (sp < 20) { edges.push('L3-|Yes| L4'); }
+                                }
+                            }
                         }
                     }
                 }
@@ -417,13 +472,17 @@
             if (sharing == 'No') {
                 done.push('SX', 'SX1', 'SX2', 'SX3', 'SX4', 'P', 'P1', 'P2');
                 active.push('SEP');
+                edges.push('SEP-SX', 'SX-SX1', 'SX1-SX2', 'SX2-SX3', 'SX3-SX4', 'N-|Separated| P', 'P-P1', 'P1-P2');
+                edges.push('SX4-Q', 'P2-Q');
             } else {
                 done.push('O');
                 active.push('K', 'L5', 'O');
+                edges.push('N-|Integrated| O', 'O-Q', 'L5-Q');
             }
             
             done.push('Q', 'R', 'S', 'T');
             active.push('T');
+            edges.push('Q-R', 'R-S', 'S-T');
             
             // Build final MMD
             let finalMmd = baseMmd;
@@ -431,6 +490,12 @@
             if (active.length > 0) finalMmd += "\nclass " + active.join(',') + " activeNode;";
             if (bad.length > 0) finalMmd += "\nclass " + bad.join(',') + " badNode;";
             
+            let activeIdxs = edges.map(e => edgeMap[e]).filter(x => x !== undefined);
+            let badIdxs = badEdges.map(e => edgeMap[e]).filter(x => x !== undefined);
+            
+            if (activeIdxs.length > 0) finalMmd += "\nlinkStyle " + activeIdxs.join(',') + " stroke:#1a73e8,stroke-width:4px;";
+            if (badIdxs.length > 0) finalMmd += "\nlinkStyle " + badIdxs.join(',') + " stroke:#ea4335,stroke-width:4px;";
+
             renderMermaid(finalMmd);
         }
         
