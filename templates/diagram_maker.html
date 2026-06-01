@@ -1081,10 +1081,28 @@ flowchart TD
                 const scale = 2;
                 const canvas = document.createElement('canvas');
                 
-                // Get bounding box of SVG elements
+                // Get bounding box of SVG elements safely
                 const bbox = svgElement.getBoundingClientRect();
-                canvas.width = (svgElement.width.baseVal.value || bbox.width || 1200) * scale;
-                canvas.height = (svgElement.height.baseVal.value || bbox.height || 800) * scale;
+                let width = 1200;
+                let height = 800;
+                if (svgElement.width && svgElement.width.baseVal) {
+                    width = svgElement.width.baseVal.value;
+                } else if (svgElement.getAttribute('width')) {
+                    width = parseFloat(svgElement.getAttribute('width'));
+                } else {
+                    width = bbox.width;
+                }
+                
+                if (svgElement.height && svgElement.height.baseVal) {
+                    height = svgElement.height.baseVal.value;
+                } else if (svgElement.getAttribute('height')) {
+                    height = parseFloat(svgElement.getAttribute('height'));
+                } else {
+                    height = bbox.height;
+                }
+                
+                canvas.width = (width || 1200) * scale;
+                canvas.height = (height || 800) * scale;
                 
                 const context = canvas.getContext('2d');
                 // Fill white/dark background depending on preference

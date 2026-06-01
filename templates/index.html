@@ -862,7 +862,7 @@ const toggleForce = document.getElementById('toggle-force');
         });
 
         function handleUploadedFile(file) {
-            if (!file.name.toLowerCase().endswith('.pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
                 alert('Please upload a PDF file only.');
                 return;
             }
