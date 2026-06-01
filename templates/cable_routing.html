@@ -386,9 +386,123 @@ textarea:focus {
 }
 
 @media print {
-    .grid { grid-template-columns: 1fr; }
-    .sidePanel { display: none; }
-    .card { box-shadow: none; page-break-inside: avoid; }
+    @page {
+        size: landscape;
+        margin: 1cm;
+    }
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        background-image: none !important;
+    }
+    header, 
+    main > .card, 
+    .sidePanel > .card:nth-child(3), 
+    .btn,
+    .legend {
+        display: none !important;
+    }
+    main {
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    .grid {
+        display: grid !important;
+        grid-template-columns: 1fr 380px !important;
+        gap: 1.5rem !important;
+        width: 100% !important;
+    }
+    .card {
+        background: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        padding: 1rem !important;
+        page-break-inside: avoid;
+    }
+    .diagram {
+        background: #ffffff !important;
+        border: 1px solid #cccccc !important;
+        box-shadow: none !important;
+    }
+    svg {
+        background: #ffffff !important;
+    }
+    .node {
+        fill: #f9fafb !important;
+        stroke: #3b82f6 !important;
+    }
+    .check {
+        fill: #fef3c7 !important;
+        stroke: #d97706 !important;
+    }
+    .dec {
+        fill: #e0e7ff !important;
+        stroke: #4f46e5 !important;
+    }
+    .bad {
+        fill: #fee2e2 !important;
+        stroke: #dc2626 !important;
+    }
+    .ok {
+        fill: #d1fae5 !important;
+        stroke: #059669 !important;
+    }
+    .txt {
+        fill: #111827 !important;
+    }
+    .ttl {
+        fill: #4f46e5 !important;
+    }
+    .idc {
+        fill: #4f46e5 !important;
+    }
+    .idt {
+        fill: #ffffff !important;
+    }
+    .arr {
+        stroke: #4b5563 !important;
+    }
+    .side {
+        stroke: #111827 !important;
+    }
+    .out {
+        border: 1px solid #cccccc !important;
+        background: #ffffff !important;
+    }
+    .out div {
+        border-bottom: 1px solid #cccccc !important;
+        color: #000000 !important;
+    }
+    .out div:nth-child(odd) {
+        background: #f3f4f6 !important;
+        color: #374151 !important;
+    }
+    h2 {
+        color: #000000 !important;
+        border-left: 3px solid #4f46e5 !important;
+    }
+    .badge.yes {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+        border-color: #a7f3d0 !important;
+    }
+    .badge.no {
+        background: #fee2e2 !important;
+        color: #991b1b !important;
+        border-color: #fca5a5 !important;
+    }
+    .badge.warn {
+        background: #fef3c7 !important;
+        color: #92400e !important;
+        border-color: #fde68a !important;
+    }
+    .badge.na {
+        background: #f3f4f6 !important;
+        color: #4b5563 !important;
+        border-color: #e5e7eb !important;
+    }
 }
 </style>
 </head>
