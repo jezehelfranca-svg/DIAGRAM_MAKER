@@ -577,11 +577,12 @@ textarea:focus {
                         <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
                     </div>
                     <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="window.print()">Print Report / PDF</button>
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" id="btn-export-excel">📊 Export to Excel</button>
                 </div>
                 
                 <div class="card">
                     <h2>Owner Notes</h2>
-                    <textarea placeholder="Record layout exceptions or special project notes here..."></textarea>
+                    <textarea id="notes-input" placeholder="Record layout exceptions or special project notes here..."></textarea>
                 </div>
             </aside>
         </div>
@@ -669,6 +670,7 @@ function buildRef(){
     });
     document.getElementById('refTable').innerHTML=h
 }
+let currentOutputs = {};
 function calc(){
     let area=areaEl.value,p=primary.value,sh=shared.value,same=sameEl.value,sepv=sep.value,sch=sched.value,sp=+spare.value||0;
     let indoor=area!='Outdoor',speakerLow=(p=='Speaker 100V'||sh=='Speaker 100V')&&(low(p)||low(sh)),pow=power(p)||power(sh),lo=low(p)||low(sh);
@@ -748,6 +750,16 @@ function calc(){
             }
         }
     }
+    currentOutputs = {
+        sharing: sharing,
+        sepReq: sepReq,
+        dedicated: dedicated,
+        review: review,
+        schedOk: schedOk,
+        model: model,
+        owner: owner,
+        summary: sharing == 'Yes' ? 'Sharing acceptable. Apply stated separator and review requirements before final approval.' : 'Sharing not recommended. Use dedicated tray or trench and confirm final route owner.'
+    };
     monitor.innerHTML=[
         ['Current Status',badge(stat)],
         ['Stage ID & Name',stage],
@@ -781,6 +793,46 @@ fill('sched',['Same Phase','Different Phase']);
 ['area','primary','shared','same','sep','sched','spare'].forEach(i=>document.getElementById(i).addEventListener('change',calc));
 buildRef();
 resetForm();
+
+document.getElementById('btn-export-excel').addEventListener('click', async () => {
+    const inputs = {
+        area: areaEl.value,
+        primary: primary.value,
+        shared: shared.value,
+        same: sameEl.value,
+        sep: sep.value,
+        sched: sched.value,
+        spare: parseFloat(spare.value) || 20,
+        notes: document.getElementById('notes-input').value
+    };
+
+    try {
+        const response = await fetch('/api/cable-routing/export-excel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ inputs: inputs, outputs: currentOutputs })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Cable_Routing_Decision_Output.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } else {
+            alert("Failed to export Excel file.");
+        }
+    } catch (err) {
+        console.error("Excel export network error:", err);
+        alert("Network error exporting Excel.");
+    }
+});
 </script>
 </body>
 </html>

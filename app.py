@@ -159,6 +159,65 @@ def export_diagram_pdf():
         print(f"Error exporting PDF: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/cable-routing/export-excel', methods=['POST'])
+def export_cable_routing_excel():
+    """Populates inputs/outputs into Cable_Routing_Tool_Full_Logic.xlsx template and streams it."""
+    from io import BytesIO
+    from openpyxl import load_workbook
+    
+    try:
+        data = request.get_json()
+        inputs = data.get('inputs', {})
+        outputs = data.get('outputs', {})
+        
+        template_path = os.path.join(project_dir, "Cable_Routing_Tool_Full_Logic.xlsx")
+        if not os.path.exists(template_path):
+            return jsonify({"success": False, "error": "Excel template not found."}), 404
+            
+        wb = load_workbook(template_path)
+        ws = wb['Routing Decision Tool']
+        
+        # Populate inputs (Col B)
+        ws['B4'] = inputs.get('area', '')
+        ws['B5'] = inputs.get('primary', '')
+        ws['B6'] = inputs.get('shared', '')
+        ws['B7'] = inputs.get('same', '')
+        ws['B8'] = inputs.get('sep', '')
+        ws['B9'] = inputs.get('sched', '')
+        try:
+            ws['B10'] = float(inputs.get('spare', 20)) / 100.0
+        except ValueError:
+            ws['B10'] = 0.20
+            
+        # Populate outputs (Col B)
+        ws['B13'] = outputs.get('sharing', '')
+        ws['B14'] = outputs.get('sepReq', '')
+        ws['B15'] = outputs.get('dedicated', '')
+        ws['B16'] = outputs.get('review', '')
+        ws['B17'] = outputs.get('schedOk', '')
+        ws['B18'] = outputs.get('model', '')
+        ws['B19'] = outputs.get('owner', '')
+        ws['B20'] = outputs.get('summary', '')
+        
+        # Populate notes in A23 (replaces placeholder text)
+        if inputs.get('notes'):
+            ws['A23'] = inputs.get('notes')
+            
+        # Stream file back to client
+        out = BytesIO()
+        wb.save(out)
+        out.seek(0)
+        
+        return send_file(
+            out,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name="Cable_Routing_Decision_Output.xlsx"
+        )
+    except Exception as e:
+        print(f"Excel export error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # ----------------- Extractor Stub APIs -----------------
 # Implemented to prevent index.html console errors when running standalone.
 
