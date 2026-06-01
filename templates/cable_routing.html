@@ -126,6 +126,16 @@
                 <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-export-excel">Export to Excel</button>
             </div>
             
+            <div class="card">
+                <h2>📖 Instructions</h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                    <p><strong>1. Configure Parameters:</strong> Use the dropdowns above to define your cable systems, area, and constraints.</p>
+                    <p style="margin-top: 0.5rem;"><strong>2. Trace the Logic:</strong> The Mermaid flowchart instantly updates to highlight your approved path in <strong style="color:var(--success)">Green</strong>, ending in <strong style="color:var(--primary)">Blue</strong>.</p>
+                    <p style="margin-top: 0.5rem;"><strong>3. Identify Conflicts:</strong> Rule violations (e.g., sharing ≤60V cables with electrical lines outdoors) will glow <strong style="color:var(--danger)">Red</strong>, forcing the route to a separate trench.</p>
+                    <p style="margin-top: 0.5rem;"><strong>4. Generate Report:</strong> Click <strong>Export to Excel</strong> to download a finalized `Cable_Routing_Tool_Full_Logic.xlsx` spreadsheet populated with your selections and calculated results.</p>
+                </div>
+            </div>
+            
         </aside>
         
         <section class="mainArea">
