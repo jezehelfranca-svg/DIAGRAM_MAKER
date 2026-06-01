@@ -52,12 +52,14 @@ def export_cable_routing_excel():
         except (ValueError, TypeError):
             ws['B10'] = 0.20
             
-        # Output cells (B13-B20) are left unmodified to preserve the template's Excel formulas.
+        ws['B11'] = inputs.get('ownerApprove', 'Yes')
+            
+        # Output cells (B13-B22) are left unmodified to preserve the template's Excel formulas.
         # Excel will dynamically calculate these cells based on the inputs when opened.
         
-        # Populate notes in A23 (replaces placeholder text)
+        # Populate notes in A25 (replaces placeholder text)
         if inputs.get('notes'):
-            ws['A23'] = inputs.get('notes')
+            ws['A25'] = inputs.get('notes')
             
         # Stream file back to client
         out = BytesIO()
