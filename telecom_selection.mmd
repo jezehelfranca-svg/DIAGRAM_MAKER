@@ -1,0 +1,44 @@
+flowchart TB
+    A[Telecom Cable Route Sharing Criteria]
+
+    A --> B["Any Voltage Level<br/>FO Cable"]
+    B --> B1["Sharing Allowed<br/>with Instrumentation / Electrical"]
+    B1 --> B2["Client approval required<br/>for same trench and separation conditions"]
+
+    A --> C["400 V or Below<br/>Power 400/230 V<br/>Beacon 230 V"]
+    C --> C1["Sharing Allowed<br/>with Instrumentation / Electrical"]
+    C1 --> C2[Early equipment location confirmation required]
+    C2 --> C3[Early cable procurement required]
+
+    A --> D["100 V or Below<br/>Speaker 100 V"]
+    D --> D1[Sharing Not Allowed]
+    D1 --> D2[Separate route or tray required]
+
+    A --> E["60 V or Below<br/>Beacon / Call Station / Analog Telephone / UTP"]
+    E --> E1{Indoor or Outdoor}
+
+    E1 --> E2[Indoor]
+    E2 --> E3[Electrical sharing not recommended]
+    E3 --> E4["Instrumentation sharing possible only<br/>in Rack Room / Control Room / Lab Building"]
+
+    E1 --> E5[Outdoor]
+    E5 --> E6["Sharing may be possible<br/>subject to detailed review"]
+
+    A --> F[Common Layout Strategy]
+    F --> F1[Integrated E/I layout is preferred]
+    F1 --> F2["If E/I routes are separated,<br/>Telecom shall review both E/I drawings"]
+    F2 --> F3["Telecom subcontractor should preferably match<br/>Electrical or Instrumentation subcontractor"]
+
+    A --> G[Construction Requirement]
+    G --> G1[All cables shall be ready before construction]
+    G1 --> G2["Tray cover and backfilling cannot proceed<br/>until cable installation is completed"]
+
+    classDef available fill:#DDF4E4,stroke:#2E7D32,color:#000;
+    classDef notAvailable fill:#FADADA,stroke:#C62828,color:#000;
+    classDef conditional fill:#FFF1C2,stroke:#F9A825,color:#000;
+    classDef header fill:#EAF3FF,stroke:#1F4E79,color:#000;
+
+    class A,E1 header;
+    class B1,C1,F1 available;
+    class D1,D2,E3 notAvailable;
+    class B2,C2,C3,E4,E6,F2,F3,G1,G2 conditional;
