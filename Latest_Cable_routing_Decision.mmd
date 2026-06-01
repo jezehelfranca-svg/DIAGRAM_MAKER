@@ -1,0 +1,136 @@
+
+flowchart TD
+    A[Start Integrated Cable Routing] --> B[Set Common Routing Philosophy]
+    B --> C[Freeze Early Design Criteria]
+
+    C --> C1[Cable Classification]
+    C --> C2[Tray / Trench Rules]
+    C --> C3[Separation Criteria]
+    C --> C4[Tray Spare Requirement]
+    C --> C5[Typical Route Models]
+
+    C1 --> D[Classify Installation Area]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D --> IN[Indoor / Controlled Area]
+    D --> OUT[Outdoor / AG Area]
+
+    %% Indoor side
+    subgraph SG_IN[Indoor / Controlled Area]
+        direction TB
+        IN --> IF1[FO Cable]
+        IN --> IF2["≤400 V<br/>Power / Beacon"]
+        IN --> IF3["≤100 V<br/>Speaker"]
+        IN --> IF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        IF1 --> IR1[Shareable with E / I]
+        IF2 --> IR2[Shareable with E / I]
+        IF3 --> IR3[Separate Route Required]
+        IF4 --> IR4[No Electrical Sharing]
+        IR4 --> IR5["Limited I Sharing<br/>Rack / Control / Lab Only"]
+
+        IR1 --> IC[Indoor Sharing Candidate]
+        IR2 --> IC
+        IR5 --> IC
+    end
+
+    %% Outdoor side
+    subgraph SG_OUT[Outdoor / AG Area]
+        direction TB
+        OUT --> OF1[FO Cable]
+        OUT --> OF2["≤400 V<br/>Power / Beacon"]
+        OUT --> OF3["≤100 V<br/>Speaker"]
+        OUT --> OF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        OF1 --> OR1[Shareable with E / I]
+        OF2 --> OR2[Shareable with E / I]
+        OF3 --> OR3[Separate Route Required]
+        OF4 --> OR4[No Electrical Sharing]
+        OR4 --> OR5[I Sharing by Engineering Review]
+
+        OR1 --> OC[Outdoor Sharing Candidate]
+        OR2 --> OC
+        OR5 --> OC
+    end
+
+    %% Direct separation result from non-shareable cases
+    IR3 --> SEP[Separate Tray / Trench]
+    OR3 --> SEP
+
+    %% Common approval and sharing logic
+    IC --> E{Owner Approval?}
+    OC --> E
+
+    E -->|No| SEP
+    E -->|Yes| F{Same Tray / Trench?}
+
+    F -->|No| SEP
+    F -->|Yes| G{Separator Required?}
+
+    G -->|Yes| H[Apply Separator / Partition]
+    G -->|No| I[No Separator if Approved]
+
+    H --> J{Construction Sequence OK?}
+    I --> J
+
+    J -->|No| SEP
+    J -->|Yes| K[Shared Routing Accepted]
+
+    %% Consequence path for Separate Tray / Trench
+    SEP --> SX[Set E / I / C Layout Strategy]
+    SX --> SX1[Layout Type: Separated]
+    SX1 --> SX2[Coordinate E / I Drawings]
+    SX2 --> SX3[Select Favorable Communication Route]
+    SX3 --> SX4[Update Typical Route Model]
+
+    %% Engineering verification for accepted sharing
+    K --> L[Engineering Verification]
+    L --> L1[Separation Distance]
+    L1 --> L2[Tray / Trench Capacity]
+    L2 --> L3{Tray Spare Available?}
+
+    L3 -->|No| L3A["Increase Tray Size<br/>or Adjust Route"]
+    L3A --> L2
+
+    L3 -->|Yes| L4[Pulling Sequence]
+    L4 --> L5[Tray Cover / Backfill Constraint]
+
+    %% General integrated layout strategy
+    B --> M[Set Initial E / I / C Layout Strategy]
+    M --> N{Initial Layout Type}
+
+    N -->|Integrated| O[Preferred Common Route]
+    N -->|Separated| P[Coordinate E / I Drawings]
+    P --> P1[Select Favorable Communication Route]
+    P1 --> P2[Align Subcontractor if Possible]
+
+    %% Route model finalization
+    O --> Q[Finalize Typical Route Model]
+    P2 --> Q
+    SX4 --> Q
+    L5 --> Q
+
+    %% Governance and approval
+    Q --> R[Route Decision Authority]
+    R --> S[Final Owner / Discipline Approval]
+    S --> T[Approved Routing Design]
+
+    %% Styling
+    classDef process fill:#EAF3FF,stroke:#1F4E79,color:#000,font-weight:bold;
+    classDef decision fill:#FFF1C2,stroke:#F9A825,color:#000,font-weight:bold;
+    classDef accept fill:#DDF4E4,stroke:#2E7D32,color:#000,font-weight:bold;
+    classDef reject fill:#FADADA,stroke:#C62828,color:#000,font-weight:bold;
+    classDef final fill:#E2F0D9,stroke:#548235,color:#000,font-weight:bold;
+    classDef area fill:#F3F7FB,stroke:#5B9BD5,color:#000,font-weight:bold;
+    classDef sepPath fill:#FCE4D6,stroke:#C65911,color:#000,font-weight:bold;
+
+    class A,B,C,C1,C2,C3,C4,C5,D,L,L1,L2,L4,L5,M,Q,R,S process;
+    class E,F,G,J,N,L3 decision;
+    class IR1,IR2,IR5,OR1,OR2,OR5,IC,OC,K,O accept;
+    class IR3,OR3,IR4,OR4,SEP reject;
+    class IN,OUT,IF1,IF2,IF3,IF4,OF1,OF2,OF3,OF4,P,P1,P2 area;
+    class SX,SX1,SX2,SX3,SX4,L3A sepPath;
+    class T final;
