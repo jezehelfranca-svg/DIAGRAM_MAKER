@@ -388,7 +388,7 @@ textarea:focus {
 @media print {
     @page {
         size: landscape;
-        margin: 1cm;
+        margin: 0.5cm;
     }
     body {
         background: #ffffff !important;
@@ -399,7 +399,8 @@ textarea:focus {
     main > .card, 
     .sidePanel > .card:nth-child(3), 
     .btn,
-    .legend {
+    .legend,
+    .note {
         display: none !important;
     }
     main {
@@ -409,7 +410,7 @@ textarea:focus {
     .grid {
         display: grid !important;
         grid-template-columns: 1fr 380px !important;
-        gap: 1.5rem !important;
+        gap: 1rem !important;
         width: 100% !important;
     }
     .card {
@@ -418,15 +419,20 @@ textarea:focus {
         color: #000000 !important;
         box-shadow: none !important;
         backdrop-filter: none !important;
-        padding: 1rem !important;
+        padding: 0.75rem !important;
         page-break-inside: avoid;
     }
     .diagram {
         background: #ffffff !important;
         border: 1px solid #cccccc !important;
         box-shadow: none !important;
+        overflow: visible !important;
+        padding: 0.5rem !important;
     }
-    svg {
+    .diagram svg {
+        width: 100% !important;
+        height: auto !important;
+        max-height: 85vh !important;
         background: #ffffff !important;
     }
     .node {
@@ -511,14 +517,9 @@ textarea:focus {
     <header>
         <div style="display: flex; align-items: center; gap: 3rem;">
             <div class="logo">
-                DIAGRAM SUITE
+                CABLE ROUTING DECISION SUITE
                 <span>| Standalone UI</span>
             </div>
-            <nav style="display: flex; gap: 1.5rem;">
-                <a href="/" style="color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95rem; padding-bottom: 0.25rem; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">Diagram Maker</a>
-                <a href="/cable-routing" style="color: var(--accent-primary); text-decoration: none; font-weight: 600; font-size: 0.95rem; border-bottom: 2px solid var(--accent-primary); padding-bottom: 0.25rem;">Cable Routing</a>
-                <a href="/extractor" style="color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.95rem; padding-bottom: 0.25rem; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">Extractor</a>
-            </nav>
         </div>
         <div class="badge">Offline Processing Mode</div>
     </header>
@@ -760,11 +761,33 @@ function calc(){
         owner: owner,
         summary: sharing == 'Yes' ? 'Sharing acceptable. Apply stated separator and review requirements before final approval.' : 'Sharing not recommended. Use dedicated tray or trench and confirm final route owner.'
     };
+    
+    // Intermediate evaluations from decision matrices
+    const primCategory = systems[p][0];
+    const sharedCategory = systems[sh][0];
+    const primPhilosophy = systems[p][2];
+    const sharedPhilosophy = systems[sh][2];
+    const powerInvolved = pow ? 'Yes' : 'No';
+    const lowSignalInvolved = lo ? 'Yes' : 'No';
+    const speakerLowConflict = speakerLow ? 'Yes (Conflict)' : 'No';
+    const indoorRestriction = indoor ? 'Yes (Restricted)' : 'No';
+    
     monitor.innerHTML=[
         ['Current Status',badge(stat)],
         ['Stage ID & Name',stage],
         ['Area Classification',area],
-        ['Selected Systems',p+' + '+sh],
+        ['Primary Cable Type',`${p} (${primCategory})`],
+        ['Primary Default Philosophy',badge(primPhilosophy)],
+        ['Shared Cable Type',`${sh} (${sharedCategory})`],
+        ['Shared Default Philosophy',badge(sharedPhilosophy)],
+        ['Same Tray Considered',same],
+        ['Separator Required',badge(sepReq=='Yes'?'Yes':sepReq)],
+        ['Power Involved',badge(powerInvolved)],
+        ['Low Signal Involved',badge(lowSignalInvolved)],
+        ['Speaker & Low Signal Conflict',badge(speakerLowConflict)],
+        ['Indoor Restriction',badge(indoorRestriction)],
+        ['Construction Schedule Compatible',badge(schOk)],
+        ['Tray Spare Capacity Status',badge(sp>=20?'Acceptable':'Review Required')],
         ['Routing Recommendation',badge(sharing=='Yes'?'Common sharing route can proceed':'Dedicated or separated route recommended')]
     ].map(r=>`<div>${r[0]}</div><div>${r[1]}</div>`).join('')
 }
@@ -807,8 +830,11 @@ document.getElementById('btn-export-excel').addEventListener('click', async () =
     };
 
     try {
-        const response = await fetch('/api/cable-routing/export-excel', {
+        // Fallback for file:/// direct browser rendering: fetch absolute path
+        const apiBase = window.location.protocol.startsWith('file') ? 'http://127.0.0.1:5000' : '';
+        const response = await fetch(`${apiBase}/api/cable-routing/export-excel`, {
             method: 'POST',
+            mode: 'cors',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -826,11 +852,12 @@ document.getElementById('btn-export-excel').addEventListener('click', async () =
             a.remove();
             window.URL.revokeObjectURL(url);
         } else {
-            alert("Failed to export Excel file.");
+            const errDetail = await response.text();
+            alert("Failed to export Excel file: " + errDetail.substring(0, 100));
         }
     } catch (err) {
         console.error("Excel export network error:", err);
-        alert("Network error exporting Excel.");
+        alert("Network error exporting Excel. Ensure the Flask server is running at http://127.0.0.1:5000");
     }
 });
 </script>
