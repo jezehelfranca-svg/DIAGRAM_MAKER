@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cable Routing Decision Suite</title>
+    <!-- Load Mermaid.js and ExcelJS from CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', theme: 'default' });
+    </script>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-hover: #1557b0;
+            --surface: #ffffff;
+            --background: #f8f9fa;
+            --text: #202124;
+            --text-muted: #5f6368;
+            --border: #dadce0;
+            --success: #34a853;
+            --danger: #ea4335;
+            --warning: #fbbc04;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--background); color: var(--text); line-height: 1.5; padding: 1rem; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; background: var(--surface); padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1rem; }
+        .logo-area { display: flex; align-items: center; gap: 1rem; }
+        .logo-area svg { width: 32px; height: 32px; color: var(--primary); }
+        .title-block { font-size: 1.25rem; font-weight: 600; }
+        .title-block span { font-weight: 400; color: var(--text-muted); }
+        .badge { background: #e8f0fe; color: var(--primary); padding: 0.25rem 0.75rem; border-radius: 16px; font-size: 0.875rem; font-weight: 500; }
+        
+        .grid { display: flex; gap: 1rem; align-items: flex-start; }
+        .sidePanel { flex: 0 0 320px; display: flex; flex-direction: column; gap: 1rem; }
+        .mainArea { flex: 1; background: var(--surface); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1rem; min-height: 800px; overflow: auto; }
+        
+        .card { background: var(--surface); padding: 1.25rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { font-size: 1.1rem; color: var(--text); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+        select, input { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 0.95rem; }
+        
+        .btn { background: var(--primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 500; text-align: center; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--background); }
+        
+        .out div { font-size: 0.9rem; padding: 0.25rem 0; }
+        .out div:nth-child(odd) { font-weight: 600; color: var(--text-muted); margin-top: 0.5rem; }
+        
+        
+        #mermaid-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; }
+        
+        /* Edge Glow Filters */
+        .edgePath path { transition: all 0.3s ease; }
+        .edgePath path[style*="#1a73e8"] { filter: drop-shadow(0 0 6px rgba(26,115,232,0.6)); }
+        .edgePath path[style*="#ea4335"] { filter: drop-shadow(0 0 6px rgba(234,67,53,0.8)); }
+    
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div class="title-block">
+                CABLE ROUTING DECISION SUITE
+                <span>| MMD Visualizer</span>
+            </div>
+        </div>
+        <div class="badge" style="background:#e6fffa; color:#00a389; border:1px solid #b2f5ea;">Totally Offline Mode (No Flask)</div>
+    </header>
+
+    <div class="grid">
+        <aside class="sidePanel">
+            <div class="card">
+                <h2>Routing Parameters</h2>
+                <div class="form-group">
+                    <label>Installation Area</label>
+                    <select id="area"></select>
+                </div>
+                <div class="form-group">
+                    <label>Primary Cable System</label>
+                    <select id="primary"></select>
+                </div>
+                <div class="form-group">
+                    <label>Shared Cable System</label>
+                    <select id="shared"></select>
+                </div>
+                <div class="form-group">
+                    <label>Owner Approval Granted?</label>
+                    <select id="ownerApprove">
+                        <option>Yes</option>
+                        <option>No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Same Tray Considered?</label>
+                    <select id="same"></select>
+                </div>
+                <div class="form-group">
+                    <label>Separator Applied?</label>
+                    <select id="sep"></select>
+                </div>
+                <div class="form-group">
+                    <label>Construction Schedule</label>
+                    <select id="sched"></select>
+                </div>
+                <div class="form-group">
+                    <label>Tray Spare Capacity (%)</label>
+                    <input type="number" id="spare" value="20" min="0" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Export Notes (cell A25)</label>
+                    <textarea id="notes" rows="3" placeholder="Enter notes to export..." style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; background: #fff; font-size: 0.95rem; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button class="btn" style="flex: 1;" onclick="calc()">Evaluate</button>
+                    <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Decision Output</h2>
+                <div id="output" class="out"></div>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" id="btn-export-excel">Export to Excel</button>
+            </div>
+            
+            <div class="card">
+                <h2>📖 Instructions</h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                    <p><strong>1. Configure Parameters:</strong> Use the dropdowns above to define your cable systems, area, and constraints.</p>
+                    <p style="margin-top: 0.5rem;"><strong>2. Trace the Logic:</strong> The Mermaid flowchart instantly updates to highlight your approved path in <strong style="color:var(--success)">Green</strong>, ending in <strong style="color:var(--primary)">Blue</strong>.</p>
+                    <p style="margin-top: 0.5rem;"><strong>3. Identify Conflicts:</strong> Rule violations (e.g., sharing ≤60V cables with electrical lines outdoors) will glow <strong style="color:var(--danger)">Red</strong>, forcing the route to a separate trench.</p>
+                    <p style="margin-top: 0.5rem;"><strong>4. Generate Report:</strong> Click <strong>Export to Excel</strong> to download a finalized `Cable_Routing_Tool_Full_Logic.xlsx` spreadsheet populated with your selections and calculated results.</p>
+                </div>
+            </div>
+            
+        </aside>
+        
+        <section class="mainArea">
+            <div id="mermaid-container"></div>
+        </section>
+    </div>
+
+    <script>
+        const baseMmd = `flowchart TD
+    A[Start Integrated Cable Routing] --> B[Set Common Routing Philosophy]
+    B --> C[Freeze Early Design Criteria]
+
+    C --> C1[Cable Classification]
+    C --> C2[Tray / Trench Rules]
+    C --> C3[Separation Criteria]
+    C --> C4[Tray Spare Requirement]
+    C --> C5[Typical Route Models]
+
+    C1 --> D[Classify Installation Area]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+
+    D --> IN[Indoor / Controlled Area]
+    D --> OUT[Outdoor / AG Area]
+
+    subgraph SG_IN[Indoor / Controlled Area]
+        direction TB
+        IN --> IF1[FO Cable]
+        IN --> IF2["≤400 V<br/>Power / Beacon"]
+        IN --> IF3["≤100 V<br/>Speaker"]
+        IN --> IF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        IF1 --> IR1[Shareable with E / I]
+        IF2 --> IR2[Shareable with E / I]
+        IF3 --> IR3[Separate Route Required]
+        IF4 --> IR4[No Electrical Sharing]
+        IR4 --> IR5["Limited I Sharing<br/>Rack / Control / Lab Only"]
+
+        IR1 --> IC[Indoor Sharing Candidate]
+        IR2 --> IC
+        IR5 --> IC
+    end
+
+    subgraph SG_OUT[Outdoor / AG Area]
+        direction TB
+        OUT --> OF1[FO Cable]
+        OUT --> OF2["≤400 V<br/>Power / Beacon"]
+        OUT --> OF3["≤100 V<br/>Speaker"]
+        OUT --> OF4["≤60 V<br/>Telecom / PA / UTP"]
+
+        OF1 --> OR1[Shareable with E / I]
+        OF2 --> OR2[Shareable with E / I]
+        OF3 --> OR3[Separate Route Required]
+        OF4 --> OR4[No Electrical Sharing]
+        OR4 --> OR5[I Sharing by Engineering Review]
+
+        OR1 --> OC[Outdoor Sharing Candidate]
+        OR2 --> OC
+        OR5 --> OC
+    end
+
+    IR3 --> SEP[Separate Tray / Trench]
+    OR3 --> SEP
+
+    IC --> E{Owner Approval?}
+    OC --> E
+
+    E -->|No| SEP
+    E -->|Yes| F{Same Tray / Trench?}
+
+    F -->|No| SEP
+    F -->|Yes| G{Separator Required?}
+
+    G -->|Yes| H[Apply Separator / Partition]
+    G -->|No| I[No Separator if Approved]
+
+    H --> J{Construction Sequence OK?}
+    I --> J
+
+    J -->|No| SEP
+    J -->|Yes| K[Shared Routing Accepted]
+
+    SEP --> SX[Set E / I / C Layout Strategy]
+    SX --> SX1[Layout Type: Separated]
+    SX1 --> SX2[Coordinate E / I Drawings]
+    SX2 --> SX3[Select Favorable Communication Route]
+    SX3 --> SX4[Update Typical Route Model]
+
+    K --> L[Engineering Verification]
+    L --> L1[Separation Distance]
+    L1 --> L2[Tray / Trench Capacity]
+    L2 --> L3{Tray Spare Available?}
+
+    L3 -->|No| L3A["Increase Tray Size<br/>or Adjust Route"]
+    L3A --> L2
+
+    L3 -->|Yes| L4[Pulling Sequence]
+    L4 --> L5[Tray Cover / Backfill Constraint]
+
+    B --> M[Set Initial E / I / C Layout Strategy]
+    M --> N{Initial Layout Type}
+
+    N -->|Integrated| O[Preferred Common Route]
+    N -->|Separated| P[Coordinate E / I Drawings]
+    P --> P1[Select Favorable Communication Route]
+    P1 --> P2[Align Subcontractor if Possible]
+
+    O --> Q[Finalize Typical Route Model]
+    P2 --> Q
+    SX4 --> Q
+    L5 --> Q
+
+    Q --> R[Route Decision Authority]
+    R --> S[Final Owner / Discipline Approval]
+    S --> T[Approved Routing Design]
+
+    classDef process fill:#EAF3FF,stroke:#1F4E79,color:#000,font-weight:bold;
+    classDef decision fill:#FFF1C2,stroke:#F9A825,color:#000,font-weight:bold;
+    classDef accept fill:#DDF4E4,stroke:#2E7D32,color:#000,font-weight:bold;
+    classDef reject fill:#FADADA,stroke:#C62828,color:#000,font-weight:bold;
+    classDef final fill:#E2F0D9,stroke:#548235,color:#000,font-weight:bold;
+    classDef area fill:#F3F7FB,stroke:#5B9BD5,color:#000,font-weight:bold;
+    classDef sepPath fill:#FCE4D6,stroke:#C65911,color:#000,font-weight:bold;
+
+    class A,B,C,C1,C2,C3,C4,C5,D,L,L1,L2,L4,L5,M,Q,R,S process;
+    class E,F,G,J,N,L3 decision;
+    class IR1,IR2,IR5,OR1,OR2,OR5,IC,OC,K,O accept;
+    class IR3,OR3,IR4,OR4,SEP reject;
+    class IN,OUT,IF1,IF2,IF3,IF4,OF1,OF2,OF3,OF4,P,P1,P2 area;
+    class SX,SX1,SX2,SX3,SX4,L3A sepPath;
+    class T final;
+    
+    classDef activeNode fill:#1a73e8,stroke:#0d47a1,color:#fff,stroke-width:3px;
+    classDef doneNode fill:#34a853,stroke:#1b5e20,color:#fff,stroke-width:2px;
+    classDef badNode fill:#ea4335,stroke:#b71c1c,color:#fff,stroke-width:3px;
+`;
+        
+        let systems = {
+            'FO Cable': ['Telecom', 'No issue', 0],
+            'UTP 5V': ['Telecom', 'Low Voltage (<60V)', 5],
+            'Signal under 24V': ['Instrument', 'Low Voltage (<60V)', 24],
+            'Beacon 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Call Station 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Analog Tel 24-48V': ['Telecom', 'Low Voltage (<60V)', 48],
+            'Speaker 100V': ['Telecom', 'Audio (100V)', 100],
+            'Power 400/230V': ['Electrical', 'High Voltage (>60V)', 400],
+            'Beacon 230V': ['Telecom', 'High Voltage (>60V)', 230]
+        };
+        
+        function fill(id, opts) {
+            document.getElementById(id).innerHTML = opts.map(o => `<option>${o}</option>`).join('');
+        }
+        
+        fill('area', ['Outdoor', 'Indoor', 'Control Room']);
+        fill('primary', Object.keys(systems));
+        fill('shared', Object.keys(systems));
+        fill('same', ['Yes', 'No']);
+        fill('sep', ['Yes', 'No', 'Not Applicable']);
+        fill('sched', ['Same Phase', 'Different Phase']);
+        
+        let power = (s) => systems[s][2] > 60 && systems[s][1] != 'Audio (100V)';
+        let low = (s) => systems[s][2] <= 60 && systems[s][2] > 0;
+
+        
+        const edgeMap = {
+            'A-B': 0, 'B-C': 1, 'C-C1': 2, 'C-C2': 3, 'C-C3': 4, 'C-C4': 5, 'C-C5': 6,
+            'C1-D': 7, 'C2-D': 8, 'C3-D': 9, 'C4-D': 10, 'C5-D': 11, 'D-IN': 12, 'D-OUT': 13,
+            'IN-IF1': 14, 'IN-IF2': 15, 'IN-IF3': 16, 'IN-IF4': 17, 'IF1-IR1': 18, 'IF2-IR2': 19,
+            'IF3-IR3': 20, 'IF4-IR4': 21, 'IR4-IR5': 22, 'IR1-IC': 23, 'IR2-IC': 24, 'IR5-IC': 25,
+            'OUT-OF1': 26, 'OUT-OF2': 27, 'OUT-OF3': 28, 'OUT-OF4': 29, 'OF1-OR1': 30, 'OF2-OR2': 31,
+            'OF3-OR3': 32, 'OF4-OR4': 33, 'OR4-OR5': 34, 'OR1-OC': 35, 'OR2-OC': 36, 'OR5-OC': 37,
+            'IR3-SEP': 38, 'OR3-SEP': 39, 'IC-E': 40, 'OC-E': 41, 'E-|No| SEP': 42, 'E-|Yes| F': 43,
+            'F-|No| SEP': 44, 'F-|Yes| G': 45, 'G-|Yes| H': 46, 'G-|No| I': 47, 'H-J': 48, 'I-J': 49,
+            'J-|No| SEP': 50, 'J-|Yes| K': 51, 'SEP-SX': 52, 'SX-SX1': 53, 'SX1-SX2': 54, 'SX2-SX3': 55,
+            'SX3-SX4': 56, 'K-L': 57, 'L-L1': 58, 'L1-L2': 59, 'L2-L3': 60, 'L3-|No| L3A': 61,
+            'L3A-L2': 62, 'L3-|Yes| L4': 63, 'L4-L5': 64, 'B-M': 65, 'M-N': 66, 'N-|Integrated| O': 67,
+            'N-|Separated| P': 68, 'P-P1': 69, 'P1-P2': 70, 'O-Q': 71, 'P2-Q': 72, 'SX4-Q': 73,
+            'L5-Q': 74, 'Q-R': 75, 'R-S': 76, 'S-T': 77
+        };
+
+        function calc() {
+            let area = document.getElementById('area').value;
+            let p = document.getElementById('primary').value;
+            let sh = document.getElementById('shared').value;
+            let same = document.getElementById('same').value;
+            let sepv = document.getElementById('sep').value;
+            let sch = document.getElementById('sched').value;
+            let sp = +document.getElementById('spare').value || 0;
+            let ownerApprove = document.getElementById('ownerApprove').value;
+            
+            let indoor = (area != 'Outdoor');
+            let hasFO = (p == 'FO Cable' || sh == 'FO Cable');
+            let pow = power(p) || power(sh);
+            let hasSpeaker = (p == 'Speaker 100V' || sh == 'Speaker 100V');
+            let lo = low(p) || low(sh);
+            let schOk = (sch == 'Same Phase') ? 'Yes' : 'No';
+            
+            let systemConflict = false;
+            let conflictReason = "None";
+            if (hasSpeaker) {
+                systemConflict = true;
+                conflictReason = "Speaker 100V sharing not allowed";
+            } else if (lo) {
+                if (indoor) {
+                    if (pow) {
+                        systemConflict = true;
+                        conflictReason = "Electrical sharing not recommended for 60V or below indoors";
+                    } else if (area == 'Indoor') {
+                        systemConflict = true;
+                        conflictReason = "Inst sharing possible only in Control Room/Rack Room";
+                    }
+                } else {
+                    if (pow) {
+                        systemConflict = true;
+                        conflictReason = "No Electrical sharing allowed for 60V or below outdoors";
+                    }
+                }
+            }
+
+            let sepReq = 'Not Applicable';
+            if (same == 'Yes') {
+                if (pow || hasFO || (lo && !indoor)) sepReq = 'Yes';
+            }
+            
+            let sharing = 'Yes';
+            if (same == 'No' || ownerApprove == 'No' || systemConflict || schOk == 'No' || (sepReq == 'Yes' && sepv != 'Yes')) {
+                sharing = 'No';
+            }
+            
+            let review = (same == 'Yes') ? ((pow || hasFO || (lo && !indoor)) ? 'Yes' : 'No') : 'No';
+            let dedicated = (sharing == 'Yes') ? 'No' : 'Yes';
+
+            let model = area == 'Outdoor' ? (dedicated == 'Yes' ? 'TR-02 Roadside Tray or Trench' : 'TR-01 Outdoor Common Route') : (area == 'Indoor' ? 'TR-03 Building Entry Segregated Route' : 'TR-04 Control Room Dedicated Route');
+            let owner = area == 'Control Room' ? 'Engineering Manager' : (dedicated == 'Yes' ? 'Common Route Lead' : ([p, sh].some(x => ['FO Cable', 'Speaker 100V', 'UTP 5V'].includes(x)) ? 'Telecom Lead' : (pow ? 'Electrical Lead' : 'Instrument Lead')));
+            
+            let out = [
+                ['Sharing Allowed', sharing],
+                ['Separator Mandatory', sepReq == 'Yes' ? 'Mandatory' : sepReq],
+                ['Dedicated Tray Required', dedicated == 'Yes' ? 'Required' : 'No'],
+                ['Separation Review Required', review == 'Yes' ? 'Review Required' : 'No'],
+                ['Construction Schedule Compatible', schOk],
+                ['Tray Spare Status', sp >= 20 ? 'Acceptable' : 'Increase Tray Size or Adjust Route'],
+                ['Typical Route Model', model],
+                ['Final Decision Owner', owner]
+            ];
+            if (sharing == 'No') out.push(['Layout Strategy', 'Layout Type: Separated -> Coordinate E/I Drawings']);
+            
+            document.getElementById('output').innerHTML = out.map(r => `<div>${r[0]}</div><div><span class="badge ${r[1]=='No'?'no':'yes'}">${r[1]}</span></div>`).join('');
+            
+            
+            // Generate Path for Mermaid
+            let done = ['A','B','C','C1','C2','C3','C4','C5','D','M','N'];
+            let active = [];
+            let bad = [];
+            
+            // Generate Edges for Glow
+            let edges = ['A-B', 'B-C', 'C-C1', 'C-C2', 'C-C3', 'C-C4', 'C-C5', 'C1-D', 'C2-D', 'C3-D', 'C4-D', 'C5-D', 'B-M', 'M-N'];
+            let badEdges = [];
+            
+            if (indoor) {
+                done.push('IN');
+                edges.push('D-IN');
+                if (hasFO) { done.push('IF1', 'IR1', 'IC'); edges.push('IN-IF1', 'IF1-IR1', 'IR1-IC'); }
+                if (pow) { done.push('IF2', 'IR2', 'IC'); edges.push('IN-IF2', 'IF2-IR2', 'IR2-IC'); }
+                if (hasSpeaker) { done.push('IF3', 'IR3'); edges.push('IN-IF3', 'IF3-IR3'); }
+                if (lo) { done.push('IF4', 'IR4', 'IR5', 'IC'); edges.push('IN-IF4', 'IF4-IR4', 'IR4-IR5', 'IR5-IC'); }
+            } else {
+                done.push('OUT');
+                edges.push('D-OUT');
+                if (hasFO) { done.push('OF1', 'OR1', 'OC'); edges.push('OUT-OF1', 'OF1-OR1', 'OR1-OC'); }
+                if (pow) { done.push('OF2', 'OR2', 'OC'); edges.push('OUT-OF2', 'OF2-OR2', 'OR2-OC'); }
+                if (hasSpeaker) { done.push('OF3', 'OR3'); edges.push('OUT-OF3', 'OF3-OR3'); }
+                if (lo) { done.push('OF4', 'OR4', 'OR5', 'OC'); edges.push('OUT-OF4', 'OF4-OR4', 'OR4-OR5', 'OR5-OC'); }
+            }
+            
+            if (hasSpeaker) {
+                bad.push('IR3', 'OR3');
+                done.push('SEP');
+                badEdges.push(indoor ? 'IR3-SEP' : 'OR3-SEP');
+            }
+            if (lo && indoor && pow) { bad.push('IR4'); done.push('SEP'); }
+            
+            if (!systemConflict) {
+                let reachedApproval = false;
+                if (indoor && (hasFO || pow || lo)) { done.push('E'); edges.push('IC-E'); reachedApproval = true; }
+                if (!indoor && (hasFO || pow || lo)) { done.push('E'); edges.push('OC-E'); reachedApproval = true; }
+                
+                if (reachedApproval) {
+                    if (ownerApprove == 'No') {
+                        bad.push('E');
+                        done.push('SEP');
+                        badEdges.push('E-|No| SEP');
+                    } else {
+                        done.push('F');
+                        edges.push('E-|Yes| F');
+                        if (same == 'No') {
+                            bad.push('F');
+                            done.push('SEP');
+                            badEdges.push('F-|No| SEP');
+                        } else {
+                            done.push('G');
+                            edges.push('F-|Yes| G');
+                            if (sepReq == 'Yes') {
+                                done.push('H');
+                                edges.push('G-|Yes| H');
+                                if (sepv != 'Yes') { 
+                                    bad.push('H'); done.push('SEP'); 
+                                } else { 
+                                    done.push('J'); edges.push('H-J'); 
+                                }
+                            } else {
+                                done.push('I', 'J');
+                                edges.push('G-|No| I', 'I-J');
+                            }
+                            
+                            if ((sepReq == 'Yes' && sepv == 'Yes') || sepReq != 'Yes') {
+                                if (schOk == 'No') {
+                                    bad.push('J');
+                                    done.push('SEP');
+                                    badEdges.push('J-|No| SEP');
+                                } else if (sharing == 'Yes') {
+                                    done.push('K', 'L', 'L1', 'L2', 'L3');
+                                    edges.push('J-|Yes| K', 'K-L', 'L-L1', 'L1-L2', 'L2-L3');
+                                    if (sp < 20) {
+                                        done.push('L3A');
+                                        edges.push('L3-|No| L3A', 'L3A-L2');
+                                    } else {
+                                        edges.push('L3-|Yes| L4');
+                                    }
+                                    done.push('L4', 'L5');
+                                    if (sp >= 20) edges.push('L4-L5');
+                                    else edges.push('L4-L5'); // Will still go to L5 from L4 if L3A resolved it? Wait, MMD says L3A -> L2. Loop happens. 
+                                    // For visual sake, let's just highlight both if sp < 20, because the loop eventually proceeds to L4 if resolved.
+                                    if (sp < 20) { edges.push('L3-|Yes| L4'); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (sharing == 'No') {
+                done.push('SX', 'SX1', 'SX2', 'SX3', 'SX4', 'P', 'P1', 'P2');
+                active.push('SEP');
+                edges.push('SEP-SX', 'SX-SX1', 'SX1-SX2', 'SX2-SX3', 'SX3-SX4', 'N-|Separated| P', 'P-P1', 'P1-P2');
+                edges.push('SX4-Q', 'P2-Q');
+            } else {
+                done.push('O');
+                active.push('K', 'L5', 'O');
+                edges.push('N-|Integrated| O', 'O-Q', 'L5-Q');
+            }
+            
+            done.push('Q', 'R', 'S', 'T');
+            active.push('T');
+            edges.push('Q-R', 'R-S', 'S-T');
+            
+            // Build final MMD
+            let finalMmd = baseMmd;
+            if (done.length > 0) finalMmd += "\nclass " + done.join(',') + " doneNode;";
+            if (active.length > 0) finalMmd += "\nclass " + active.join(',') + " activeNode;";
+            if (bad.length > 0) finalMmd += "\nclass " + bad.join(',') + " badNode;";
+            
+            let activeIdxs = edges.map(e => edgeMap[e]).filter(x => x !== undefined);
+            let badIdxs = badEdges.map(e => edgeMap[e]).filter(x => x !== undefined);
+            
+            if (activeIdxs.length > 0) finalMmd += "\nlinkStyle " + activeIdxs.join(',') + " stroke:#1a73e8,stroke-width:4px;";
+            if (badIdxs.length > 0) finalMmd += "\nlinkStyle " + badIdxs.join(',') + " stroke:#ea4335,stroke-width:4px;";
+
+            renderMermaid(finalMmd);
+        }
+        
+        async function renderMermaid(mmdString) {
+            if (window.mermaid) {
+                try {
+                    const { svg } = await window.mermaid.render('mermaid-svg', mmdString);
+                    document.getElementById('mermaid-container').innerHTML = svg;
+                } catch (e) {
+                    console.error("Mermaid render error:", e);
+                }
+            }
+        }
+        
+        ['area', 'primary', 'shared', 'same', 'sep', 'sched', 'spare', 'ownerApprove'].forEach(id => {
+            document.getElementById(id).addEventListener('change', calc);
+        });
+        
+        function resetForm() {
+            document.getElementById('area').value = 'Outdoor';
+            document.getElementById('primary').value = 'FO Cable';
+            document.getElementById('shared').value = 'Power 400/230V';
+            document.getElementById('ownerApprove').value = 'Yes';
+            document.getElementById('same').value = 'Yes';
+            document.getElementById('sep').value = 'Yes';
+            document.getElementById('sched').value = 'Same Phase';
+            document.getElementById('spare').value = 20;
+            calc();
+        }
+        
+        // Initial render trigger after mermaid loads
+        setTimeout(() => resetForm(), 1000);
+        
+        // Inlined base64 representation of Standalone_Cable_Routing_Tool.xlsx
+        const EXCEL_TEMPLATE_BASE64 = "UEsDBBQAAAAIAC5JwlxGx01IlQAAAM0AAAAQAAAAZG9jUHJvcHMvYXBwLnhtbE3PTQvCMAwG4L9SdreZih6kDkQ9ip68zy51hbYpbYT67+0EP255ecgboi6JIia2mEXxLuRtMzLHDUDWI/o+y8qhiqHke64x3YGMsRoPpB8eA8OibdeAhTEMOMzit7Dp1C5GZ3XPlkJ3sjpRJsPiWDQ6sScfq9wcChDneiU+ixNLOZcrBf+LU8sVU57mym/8ZAW/B7oXUEsDBBQAAAAIAC9JwlxjaUaaUAEAAIQCAAARAAAAZG9jUHJvcHMvY29yZS54bWzNks9LAkEUx/8V2VMddGZXkxzWBTMlQiNKKLwNs09d2h/DzMTqrYNB0CkIuoR4CLp0Cbr0N7n+D81uuib1BwTvMt/3nc/7Png244RFAk5FxEEoD2RhHPihJIzXjZFSnCAk2QgCKkvaEermIBIBVfophohTdkWHgCyMqygARV2qKEqBRZ4TDcd2GWECqIrECu+yHM+vhZ/BXIbAhwBCJZFZMpHhpBP5ZOzbaANIYQpEIL8FcHNipv6JzTrIWDnH0stdcRyX4nLm0zuY6LLbOc/WLXqhVDRkoH9Jj6gJh7qxnnxRbh722oZjYataxLrMHq6Qyj7ZM/tp1q18m8BB5HoD738ktnoYE1wjVu1H4nVAx9Zn4VOpuivhYOIk82ddy6e35eN0MXtIPj92jlv91lGrU2ifNU6ajd1C8n6bzKaL15fF/V0yv7HRb0qmbR+c8wVQSwMEFAAAAAgAMEnCXOmmJbiyBQAAUxsAABMAAAB4bC90aGVtZS90aGVtZTEueG1s7VlNj9tEGL4j8R9GvreOEzvNrpqtNtmkhXbb1W5a1OPEmdjTjD3WzGS3uaH2iISEKIgLEjcOCKjUSlzKr1kogiL1L/D6I8l4M95m20UUtTkknvHzfn/4HefylfsRQ4dESMrjtuVcrFmIxD4f0ThoW7cH/QstC0mF4xFmPCZta0akdWXrww8u400VkoggoI/lJm5boVLJpm1LH7axvMgTEsO9MRcRVrAUgT0S+Aj4Rsyu12pNO8I0tlCMI2B7azymPkGDlKW1NWfeY/AVK5lu+Ewc+JlEnSLDjiZO+iNnsssEOsSsbYGcET8akPvKQgxLBTfaVi37WPbWZXtBxFQFrUbXzz4FXUEwmtQzOhEMF4RO3924tLPgX8/5r+J6vV635yz4ZQDs+2Cps4J1+y2nM+epgfLLVd7dmldzy3iNf2MFv9HpdLyNEr6xxLsr+Fat6W7XS3h3ifdW9e9sd7vNEt5b4psr+P6ljaZbxmegkNF4soJO47mIzAIy5uyaEd4CeGueAEuUrWVXTh+rqlyL8D0u+gDIgosVjZGaJWSMfcB1cTQUFKcC8CbB2p18y5crW6ksJH1BE9W2Pk4wVMQS8vLZjy+fPUEvnz0+fvD0+MEvxw8fHj/42UB4DceBTvji+y/+/vZT9NeT7148+sqMlzr+958+++3XL81ApQOff/34j6ePn3/z+Z8/PDLAtwUe6vABjYhEN8kR2ucR2GYQQIbibBSDENMSBQ4BaQD2VFgC3pxhZsJ1SNl5dwQ0ABPw6vReSdeDUEwVNQCvh1EJuMs563BhNOd6Kks3ZxoHZuFiquP2MT40ye6eCG1vmkAmUxPLbkhKau4xiDYOSEwUSu/xCSEGsruUlvy6S33BJR8rdJeiDqZGlwzoUJmJrtEI4jIzKQihLvlm9w7qcGZiv0MOy0goCMxMLAkrufEqniocGTXGEdORN7AKTUoezIRfcrhUEOmAMI56IyKlieaWmJXUvY6hExnDvstmURkpFJ2YkDcw5zpyh0+6IY4So840DnXsR3ICKYrRHldGJXi5QtI1xAHHleG+Q4k6W1nfpkFoTpD0zlQUXbvUfyMan9aMGYVu/L4Zz+Hb8GgylcTJFlyF+x823h08jfcI5Pr7vvu+776LfbeqltfttssGa+tzccYvqhySx5SxAzVj5IbMWrMEpUd92MwWGdFiJk9CuCzElXCBwNk1Elx9QlV4EOIExDiZhEAWrAOJEi7hJGBV8s6OkxSMz/a8+RkQ0Fjt8lG+3dDPhgs22SqQuqBGymBdYY1LbybMyYFrSnM8szTvVGm25k2oBoTTk7/TrOeiIWMwI6PU7zmDeVjOPUQyxCNSxMgxGuI01nRb69Ve06RtNN5M2jpB0sW5FeK8c4hSbSVK9mo5sri8QkeglVf3LOTjpG2NYZKCyygBfjJtQJgFcdvyVWHKK4v5pMHmtHRqlQaXRCRCqh0sw5wquzV/dRIv9a97buqH8zHA0I3W06LRcv5DLeyToSXjMfFVxc5yWdzjU0XEQTg6QkM2FfsY9Hbz7BpRCc+M+nwhoELdIvHKlV9UwclXNEV1YJaEuOhJLS32OTy7XuiQrTT17ArdX9OUxjma4r27pqSZC2NrY5QdqGAMEBilOdq2uFAhhy6UhNTvCxgcMlmgF4KySFVCLH3hnOpKDpd9K+eRN7kgVPs0QIJCp1OhIGRPFXa+gplT15+vc0ZFn1moK5P8d0gOCRuk1dtM7bdQOO8mhSMy3Mmg2abqGgb9t3jycSsmn9PHg6Ug9yyziKs1fe1RsPFmKpzxUVs3W1z31n7UJnD4QOkXNG4qfLacbwd8H6KPFhMlgkS80CrKb7E5BJ1bmnEpq393jFqGoFUR7/McPjVnNyqcfbq413e2Z/C1d7qr7dUStbWDTLZa+eOJD++B7B04KE2ZkvnbpPtw1OzO/zIAPvaSdOsfUEsDBBQAAAAIADBJwlyfqi8zCwoAAI8nAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1s3Vp7c+I4Ev8qOiq3m1R5wDbvbOAKArlNXWaTgky27k8FC/DGtryyCMN++uuWZGPAGCb7qK3bqp3CLXWr+9cPtaTcrLl4S5aMSfI1DKKkV1lKGV/XaslsyUKaVHnMIhiZcxFSCZ9iUUtiwainmMKg5tp2qxZSP6r0bxTtSfRv+EoGfsSeBElWYUjFZsgCvu5VnEpKmPiLpURCrX8T0wWbMvklfhLwVcukeH7IosTnERFs3qsMnOs7t4sMasaLz9ZJ7jeR9HXKAjaTzFMroWmvnL/h4D2Q7AouFTGymcaBD4vXK0Ty+IHN5S0LAligUSF0Jv139gTTepVXLiUPcRzUllQCaS74byxSOqilULn4YLIWooXeOU3g/lVZgL8zC1Gt/O/UljsFNUD3ShN2y4OffU8ue5VOhXhsTleBnPD1j8zA16g2UOKMB4n6l6z17LpdIbNVAhoZdkRebgJQ1AGzQz9SpJB+NT7I8baap3ldw+vu8bqN07x1w1tPeZe+5zGt0DeIaRgxzQ+o0DK8beUOjZ4Cf0Ql7d8IviZCMSqQO6nADHaQqKTBwjhxYAiwMoz6Ecb+VAoY9kGw7N/S14CRCWSFHy3IiM18FdXPXGktl+RuFQTkgS/82U1NgkbIVpvB/6BJps52ubpe7shq91G8kuResnBXmOIdlvNOs6iukRcarFiJPo1Mn4aS6R6ROYByUaSJ5nK6R9geV9LjXBRwjjTnMbSfhI8VhrzwQEJlIbeQuQsuNgWSxlpSE3jn/fu78WTyOLl8eXh8/M+Xp8uL4UXT+n7C5kywaMYIxsb3/7gYXDiN64vxhetarnU3eJiOr6xK5eqmNu/fvIPs9wKomhlUzVKoUtWnmwTcR543MStCrlmO3BNfM0Eatl1z6/ZLEYDNUgCnSyqYdxZ+zXL8Wn8Qfq0Mv1YpfkbznzGnTmDYKsdwGjP6Big6djGCrbNC8GnpBzzh8bIQvNbvCr7GueC1M/Da5eDRkJFnQTfklsO268HKXhFy7XLk/suSIsDa54RcOV7t3xVsZ+PVyfDqlOPFYiqo5IIMYmgoisHqfAisTjlYJjZp5MGmsSZTfxHRAL02D/yZLIKuswPd5eCn0SWAh0HWq+RDvWIhkHu0Kyub++X5iTT1LOTUC68iiBXiNjL6kNEZbCFu41OjkxFvKexxU2ij/IOhAUjhC/LMgvxAa2e51pHlWkXLtY4v1ypa7gqiAlxRsSo/8RPR0c2io1saHZhDUqz0ZjqFbtpbBYWFqFseISN/rmJaQnJAQ1gULd3yWqR2g/vonQfvhTE67u4GR+bs3X1k37n1bbQUTGztTjwfX8fedlV2KcKqVE0hBxl5YmIGEMFuVYRwKsdWgvCg8t63q262vkbRzDoGYy7RyrA0Ug7B/H/NnPMd62wd65Q69nEdMVVUBX8Hrf8taARnun8Vutb5UH01bMd8fR9h50kmDDLYVxlc6GqnyNWNXkWzK8zgCwqBFNDoTzgPvwUudwuXW9qzD1ZwNAFvzbYnC+id4QxQCJiW5R4TBjbDEbPQXPdIZJ+xfxBtNTFbD2zIjt0zNPxwch9d/ftbmPKon8UH6BevpfwC/5W7pn5w/tOUdkl3gye/QRBApSzsE4yEzi667VTV4Y7ajpszHWzY2yOAjoYbKZmVFslcdvdI1Jk0dVf2faVZj2B2tQdUTovOd4H84buF/EEDeqVnmOkn4GwcwNkohzNrvD5DC4Q/itrFoZGSQZrDE/6VumubaRjInw/WCRCaByA0S0EYMQ+Uh7qoW/YJ+3XlH2nYjaQ8EE69l9PtPDe1DjRsneMmrEcT9o43dKVKtsq89XfwUPvA/nap/YUdIHTpYQygvBY3g0ZkHgUwV53M0tTOa1yucOdA4U6pwrmGCrf/VdHWOTQydoLJxsTvQUsFag1mMxZLk1VQlGeCgd46SKf+b4zgecn7ZZVIdSHGThnRPTCiW27EJoa8CLRw8pl7LCg0o3tgBuwh5s5JRxta1szS5HnyyXZBKvXwaKztAVOe8bi5TCc4xEhAN4cY+NrEVF6uOdAMdTJc+YGHm8MY2gSAiC0EW6i81rxmYoPk+wiyzX6zQjmKrr2PoqEcQ/HOx35x209gR1YEoxGzB+NOywMGjKMFyGdqD4SSDW16IcR5zMgDo94268vT3DqzEbEOWvFtp4y14BlvPwHd7dr5clMZ492oUNFlZoA3McVD3HoV6WTv4B7cHRvKMU880A3gAQkp8BqucKMzEvbru66dhh+vwa6JKckQNp8wZSGmuIDgAwoZ1+7JSNA1+EiXl9rgRGq67oEpbvmGoJ9+Ck1wy7aotH+iWW2pqt17o59lPJJkHQHeiQi92wi926BzkmpeTASbv0BHw5DHvCr5AgXKyzJKmtSWKrWr5PIISlen8DloE1OKmx1ED5kOmqGUUnpYGvnJbJWoXIXWpvDQM0wFNXdWV2O3JWOjkrFxOtYqsWh7+e028/Yf2oJ+kEs/IbAFUSK58pLwCBwEf4HU+5TEUJDmcNChUCS1Yy3CvmJQgOXwG7ym8dDOBb+TQbTZTkGZNDsueWl54+q4RJIlXwUeeWWEqrMnxMLrBhRipKgcVgsxNha2izA+PjYqGRunY50SjPGCfJfSPqB0DijdjFLLvX6Z91cII9266JfOBz57Yx6+aSb4lGqoX6Jgn47cKlz5KzpNU/0oYQJfLnUk688foSYJiIE3TUTH3PmBZPrpLZmxCPKVawH6AfqWB6sw0tNhY2eS5Slaap4S++9cPmPByPNkahihWvfsOxtOuEifqEMmFupBN4HQWkVSv8Zl1O0D9e5sQ3eb1+jFopHGNeYQvkJul8DnzMjzEXwa6Odg9XBoXpHhrHiNjSJMm0+wpZSAY6/CvsaCqRIAdgNuwpcbbfTXOT5/430CGrgKaH+YFlcoYIYEQaWknSXVzaQ6+1Jh1ykSWis06aSljfMtrWc62Ts6NY5bekwpOFPSFxr4njq9ZC5HRXaHMkWxDC75eiR4POLryGQCX6u32M+gLPQ8GXEsBBd5IsV7gWFAozf1qa0M/ERuDXH6aXNq6Q7S2mmyMuscsGpXx6M6N4l6BPuz1U67NGv3ltjKd2aWbsKs/XtKK3eHbO1cVloFt5TW4fXkR3Bp/wWgQERa+Uz5BvU6f5l61t4tyUe07f4F2m6Px9b+TdhHVHbsP1JnhuPPvsS/P7mP3nE5ogSZITyi4Il7RmM6g0JGQjwaYw9C4uxVA77lmrGI2KrBhZT5J7mEIXyiJTQhdtXG1sap2ldYEnkYS7OkFn5rhKeD0FUgM6yBPVAIKZctUDVLVDO8zRTY0EEhbLJ7FTM77wU7D7X55fadjOp+gwOcv0kG7hES/adqn6mA42xCAjYHIO1qG/ozof8wSH9IHquNV/9JmP47IjgcYl9jV5vYZnCZfuDOn/0NXv9/UEsDBBQAAAAIADBJwlz6B5rFFAUAAM0YAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDIueG1spVnbcuI4EP0Vld8XG2NuKaAqQCZLVSZDBSZb+yiwAG1syyOJMMzXb8syzmUcNUxeUrbROW6do1a3nMFByCe1Y0yTn2mSqaG30zq/8n213rGUqobIWQa/bIRMqYZbufVVLhmNC1Ca+GEQdPyU8swbDYpnczkaiL1OeMbmkqh9mlJ5HLNEHIZe0zs9eODbnTYP/NEgp1u2YPp7Ppdw51csMU9ZprjIiGSboXfdvJqFoQEUIx45O6hX18RMZSXEk7mZxUMv8Ax1xshxkSe8eBnRIr9jGz1hSQKEoUfoWvNnNodhQ28ltBap+R3C1FTDo40Uv1hWvJMlDMZCMPlvgy2JJZ0AqfpRBDwJryZ9r5qSiev19Sn4L4W2oNWKKjYRyT881ruh1/NIzDZ0n+gHcfiblXpFjcgwrkWiir/kYEeHkUfWewUhlXAjtT4mEGmz5ZGUZ8WjlP4cet2S4YRt9hpR1IyCTtjGSfoliZ2YjaOYxpRqOhpIcSDSAOEN5uLaUFjphx7PzKpYaAm/csDp0TUspYGvgcnc++sSNXGjFkelWUqWx5zVgG8QME0ZWUp6rIHeIlCWU0m1kOQ6hyXF4hqKmZtiIjKl5d6upAUkWbxP3k3CBw0rIcNKyLDg7X/A+22vYyFknZZu4JdvZEJX72OwQrqR/zJVJ+GfgGZuUGHZfAfp4VCqVSnVcpLNso+EcuPm4sAkiYLAD1vBY51cbvy9qFPrDzAzN2bKNxsmWaZRxaJKscjJCGtWS9guHoRI63Rzo8eMrmGtfyDarRt8L7TNtfXva/TNXNqnuUza7qWUM/oEPjaD9+G8oetUdJ2zJhf9FfVcfN2Kr+uWmiYJWUDt4eew9irWnpP1OqOJ2JIlS3DOfsXZd3J+X85J20XUDComuHR6wrcQINlnMRgTRk7Slyxvtj5RI8YI+lEkGroS2Bo12wpZVysmCMWUqzXPzdMa8BQD28pPFjsqebaFVOaJUCLf1UVyg5BBEr3fdd+KCjlomouo1QhPDUDVcFjmV7LbhDWWXlpPxhj2pDps0Qz6zhg2sVrhEZqladVqt6opBr1lGZOQg8dCefZRYcRo7k1LZ1jUiQX63tV/0EBCB0oktMfGVJrFhEM7ACNtwucSnCpag4bLrvYldrXdkaJVbYwxAPaRQEu0Mi1+rV0IwY1prCXs8EmtYwj6jqdcs/iUKbVuIRQvbZ1xRNk7e+x4NgcLfcxNdGCnZD/2XMLbDjuWFebCK51edV6c6LijcNfJMQbHbUAIEBsQ9Dk2IBRLyBRNFBAlVJo8uXskuVmeToG7NhnCXqOHJ0MXWQgfNgelBwi+iXqAELh2LgRabTnlaq49nNygCpRgAgfflJgab1ICZkMS9gztg7KlWhXFVTmN6V1iTO+83KhpXkpnEIIOZgyCnxWntrS+IE0x9FehNDhjmll3WUF47kDa57JGWifgAG5783XZqDgt6V9iSd8dC9qplsYgNKgxCB4xBkGfbQzC80ljwuACY8LAHQvS7FtbMBLMFgzv2Mgw6LmeYDyvPdE2HL/cvs7ypHlBlxU23bHUHZZKIxAkagSCdxmBQM82AuFZmI+45gMpiammpDjJN8jbSlNUTlWWX1Ny0MIfhpf4EyIhOk+gpVMIB+oUgnfvZBj6bLMwJSqzqlz5nF3+q4/D5kP/Vyq3cOiBfmIDAQSNLjTn0tpmb7TICwftB/bicscoGGMGwO8bAYek8sZ8gq7+gzH6H1BLAwQUAAAACAAwScJcIuR21qwDAACwCgAAGAAAAHhsL3dvcmtzaGVldHMvc2hlZXQzLnhtbJVWW4/aOhD+K6M8b0nCsru0AqRdquqs1AuCtufZJBPis46d2g6Uf9+xDYE9oqZ9gNhjz+f55mZPdkq/mBrRws9GSDNNamvbd2lqihobZgaqRUkrldINszTVm9S0GlnplRqRDrPsPm0Yl8ls4mULPZuozgoucaHBdE3D9P4JhdpNkzw5CpZ8U1snSGeTlm1whfZbu9A0S3uUkjcoDVcSNFbT5DF/95R7Bb/jO8edORuDo7JW6sVNnstpkjmLUGBhHQSjzxbnKIRDcob8OKD2sGmPdT4+nvHBu4AorZnBuRL/8tLW02ScQIkV64Rdqt0/eKA1GowcYqGE8f+wC7uHdwkUnbGqOag7Q+xeII1uE2i49KKG/Tz45kw3z7PrysOD8tATCud7898zy2YTrXagvaI3c3wE7A0nRI9GJ7uNjwcBfWiVSxfVldW0zAnYzuZsLRCWFG8uN/AeC+7j9VFteDFJLZng9qUF/ejo/vwT/m3A/w38shP4GsZrPcW1/Onw2LaCYxmxYhS8MBwPrvth5AXj35z4SBUBaota8/KiwXH1Z1kqpYHJEuZKWk0xXyrVANMIlqAtlsAMEP4eBG+4m5uaafL5AFZhANzABiVqJsSeCuY/ynva1kmBxkCrlRO8MS2FqCLvsJZEWya8mmaS9g4irrrrHXEXZbJijTOZ7UEqC4Wi8i1R/z8KwSdxpOcKPNhXBzbvgZy9n9UNdAbBYMs0OSccSA4kX8mi9n48rJHQK9iQDoVL1xjP+57nfdS6D1/Ap/4lXlc1vRWv4+WiiU58A+vOusCzQIPacElFAPQtXgyVOxfCBU/sYzQe/iKzH6LmLtQONYyyLB3eZt+dk5+QUVzBTS+xj8OdJeshkQdAkTZ92tDCKWtuzsJ4FtRwI2xdz3cVovFHx3U8f8c93XHcvhbZCxHOs8vs/lzbhZRCtT6laQmVpqL+9nXhydCF+EbgFgUYvpFUiWZvLDYmRuNtT+Nt1BB3BvlsFYA7Sd6E4egio+tAMWN9ABplrAgV3+cxXVq2htZnjzp6JLgnRjDPTjdPFvd1nxm+NC5Ru4Lg8u68SzRE1I33vgQdGxaukJtjs3W7jp01yiI/scjjLF7V90UScYDXxSONpaQLFUK2cgklryoqJRmasdVdeA21NT1izEViUDmfHjezNRfcuguFGZJdZJ2ePTDcW+4T0xsyBQRWZHM2eKBOr0P3CROrWt+I1spSZwrPEXpSonYbaL1Syh4n7hnTP1JnvwBQSwMEFAAAAAgAMEnCXONWQB9eAwAA8goAABgAAAB4bC93b3Jrc2hlZXRzL3NoZWV0NC54bWyVVmFP2zAQ/StWvq8pbRkTaitBCxoSiKpl22eTXBMLx87OF0r363d2SmFaqMuXKL74PT/fi8833lh8ciUAiZdKGzdJSqL6PE1dVkIlXc/WYPjL2mIliYdYpK5GkHkAVTod9Ptf00oqk0zHIbbA6dg2pJWBBQrXVJXE7SVou5kkJ8lrYKmKknwgnY5rWcAK6Ee9QB6le5ZcVWCcskYgrCfJxcn51amfHyb8VLBx796F38mjtU9+cJNPkn7imQ2I7arWKqwlyNa3sKYZaM18g0TIjNQzLHjaJHm0RLby31klSeLQGu0fMGFN0MBzWUv93+SWpCWdnTL4d9A7C2LTvcL376/Kr0NeOU+P0sHM6l8qp3KSfEtEDmvZaFrazXfY5WrUG3nGzGoXnmLTzh6MEpE1jvXs4D7NtNUs82SYiEqZEKrkyyQ5C5paiqBgLklOx2g3Av0sJvYvF56iTdkkUcabuSLkr4pxNF2ywSBmNodxSszno2m2w14exl7w39OBmh1GPWxrlUkt2pXveGXdQTI/TDJvcyruNwawA34Vg7sMVe3/gn/BKadvn0P+q7xbo2Fv8GrL3sGWfrjP8qAN9D/a9PJL/6QrwxHcfUO5tV07nB2HZGuriv/1kO2uPEdo3sPFLVeLrmRHOO64pgi70+NKiZALDIRSW1OIGm0GzonGKBI8pVY1CJTZU09ca3hRjxr4gFDJxeOZT1zvgGXDT1g2jFs26LIsgjtgWQS5tFyMVQ7iAeXWJ+IBwWRll2sRpqNcO1YN7dRQUCMkojQFcEEnwZeJUIYAv7CpMpiqTHHIoNEnDBrFDRp2GRTB3ZiP/IkALxulc96fuDKEW7GCAqHg2yX/+HRFGK9MwRFAT3onDd+encXsWF0QdAUrwnnJLAes1qzQQS1RhmtPmlxoVSkv3J/GiGOnn3DsNO7YqMuxCG7W7oPTbKsu3z4BF3PI+fo5aFqE7kjTIixvOrwfJSdUb7nAOUKV0b5AKhOO4M5IDtqq06v0XQfgm7A7iSzSCc1tDTdQvTNWg61p7YD7p+Bf2/2E15LrBKCfwN/X1tLrgPsMklyEFxLJsZbGUNtg7KNty3mOxzSddr1WGcxt1vgS0nadCDr8m65UtWOl54rbPrzJQ1OZvi3Og32bO/0LUEsDBBQAAAAIADBJwlyax6s4DgEAADYCAAAUAAAAeGwvdGFibGVzL3RhYmxlMS54bWx1kWtOwzAQhK9i+QA4LYQfVVKpClRCoiC1XMAkG2LJL9lrhdwe1yF9EX56/I13Zl0g/5RARFPSBSWaKyjpx2BFzeXeBISdaUB6ShrhreTD27+Ag7akm8XqOaekA96A25u+MkFjevlbSe1L2iHaFWO+7kBxf2cs6HjTGqc4xqP7Yt666PYdACrJlln2yBQXmq4LHtBshURwl8PYukgVKiOD0p7U48icXunXBVNwUsXkN/aELSdsE5PMAfc3iyLje2kTc/zDxD9By4NE8t5rcHNkfiZ97YRFYfSRY5cVf20HHCS86NZMYU7iDhoRVKzhO9NvhfM4Okuajdor/yPFzzpgnAg+7ekojcRJzc5B1j9QSwMEFAAAAAgAMEnCXIvuCz+LAAAA7QAAACMAAAB4bC93b3Jrc2hlZXRzL19yZWxzL3NoZWV0NC54bWwucmVsc43PPQqDQBAF4KsscwBHU6QIq1Ua2+AFJuu4SvaP3RHM7SMkhYEUKd978MHTN3YkSwxlXlJRm3ehtDCLpAtiMTN7KlVMHPZlitmT7DFbTGQeZBlPdX3GfDSg00dTDc/E/4hxmhbD12hWz0F+wCh0dwxqoGxZWsDNvavP0lS7CKofW8j92AB2Gr/edS9QSwMEFAAAAAgAMEnCXJ2VpXfaAwAAwh0AAA0AAAB4bC9zdHlsZXMueG1s3Vltb9o6FP4rUX7AAgnNyARIW1akSdtUaf2wr4Y4YF0nznVMB/v187FDQtscRoC0vTdRwT7H5zmvfsGdlGrH6Y81pcrZZjwvp+5aqeKD55XLNc1I+U4UNNecVMiMKN2VK68sJCVJCUIZ9/zBIPQywnJ3Nsk32TxTpbMUm1xN3YHrzSapyBvKjWsJeijJqPNA+NSNCWcLycxYkjG+s2QfCEvBhXSUNoVO3SFQyt+WPbQ9sLLCyVguJBA9q+GInkWF0aiQq8XUnVfPcz3dIGvZ0fXNOQOy1RXzVWoMxnmdntC1hNmkIEpRmc91x8gY4jOWU7Xvd4XOz0qS3dC/cU8WKAVnCahcxYdeD+ej2/djA3MgeiHo5+j24/z9lUFv/fngc3R1S+FFQc2XTtxCyITKOnU6uXvabMJpqrS8ZKs1fCtRQEkIpUSmGwkjK5ETk9i9xKGkYxaFqavWZlI/qshP5jXGwdBKx4kSZqwx50QBPXJv94kSdvDffXwcne7m9BLG7qnyXi4BfVrTb3U+CWuvldS3lvND+8Ym0FuJz6tYXjX0Kr6knP8AvJ9ps5Rr1G3q2MPUlwTOUQ7s1vumXv+rpoWxHcA/RLPYB7C+fxauU7AHoT5ttDe56f+7EYreSZqyrelv09oADH3YoPuH6MOroI8a9OD66FhkNDopCr67kxpyqRho6KBRnwtqQYeL5T/UKlizJKH5PqHb9CS3b17U7XPRo/9WUEcvX0sfOVvlGbWLQAevyV7OeaBSsSWc9vWK5Tq/JCnu6VZVvwSOuj541Wl0uetdfPV7Xe66+XpZwZ+a+ksnRr8bRIBsEIOrVcdaSPZba4P4LDWByrNdjvotkn5rMHrtFfaY32/Usl6n7TXmaYed9e06cdp5scfNwqsOzAen8kdn8prqwJXb1P0Od6K8wXcWG8YVy1vO4xoz2TZH8cA1/XNviPTjxzF+Q2SgL8EfxXGf+H+5NrP48KnDpsiC08e50JFOaEo2XN3XzKnbtL/RhG2yqB51B/VRjWraX+En4DCs71y1LpYndEuTuOpqaw/MHlQPCDzlNPe0zzmYjOW1c4CH6cEswGSsFKbn/+TPGPXH8jDbxq2cMSozRmWsVBsnNi+mp10m0k+7p1EUBGGIRdRO3WcWxFjcwhD+2tEw20AC0wOausUazzZeIcfrAMvpsQrBPMUrEfMUjzVw2uMGElHUnm1MD0hgWcBqB/S364GaapcJgv2G0GYbNoNxThRhHKjF9hoNQyQ6Ibzt+cFmSRBEUTsHeO0WBAHGgdmIczALwAaMEwRmc3yyH3n7fcpr/ms7+wNQSwMEFAAAAAgAMEnCXJeKuxzAAAAAEwIAAAsAAABfcmVscy8ucmVsc52SuW7DMAxAf8XQnjAH0CGIM2XxFgT5AVaiD9gSBYpFnb+v2qVxkAsZeT08EtweaUDtOKS2i6kY/RBSaVrVuAFItiWPac6RQq7ULB41h9JARNtjQ7BaLD5ALhlmt71kFqdzpFeIXNedpT3bL09Bb4CvOkxxQmlISzMO8M3SfzL38ww1ReVKI5VbGnjT5f524EnRoSJYFppFydOiHaV/Hcf2kNPpr2MitHpb6PlxaFQKjtxjJYxxYrT+NYLJD+x+AFBLAwQUAAAACAAwScJcgoXPsJ8BAAAoBAAADwAAAHhsL3dvcmtib29rLnhtbLWTT2/bMAzFv4qg+2rHzbImiHNpsLXA/hRp0J4Vi46JyqIhyXXTTz/KhlsDA4JdcpLeo0H+8ESvO3IvB6IX8VYb63NZhdCsksQXFdTKX1EDlisluVoFlu6Y+MaB0r4CCLVJsjRdJLVCKzfrsdeDSzbreHlC6PynH6V4RY8HNBhOuezvBqSo0WKN76BzmUrhK+ruyOE72aDMY+HImFzOhsITuIDFP/Zj5Nmrg++dt2e0mrpcZjeLG+54GvWX2fIr666Xz6hDxd8s0/mHdwd4rAI3+baIZlCHnQpIuVykLEt0PvSjelBVBHwFnjqoNtB3NAHcVgX44aht0B4jD8eRTPLosxvPIfiV+5/oqSyxgC0VbQ02DNk7MBHQ+gobL4VVNeRyR23g2WILBUdMVuyJTAyKB97rIbTAkJMncCvkgrvXPe4F0aAEB7YAwSmpCVN2him7LNNHTLvWgJ8wXZ9hur4s0/7UxDUX8SlB/CINZko2P0M27xdu3DINJVrQv7mrZ597Fg9OxKPfhOUszZa82a0xt+z9sT9J6XFpxz938xdQSwMEFAAAAAgAMEnCXAFlxe7AAAAAqwMAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc8WTOQ7CMBBFr2L5AAwkgQIRKpq0KBewzGQR8SLPIJLbY6AIlihoUCrrj+X3XzE+nHFQ3DtLXe9JjGawVMqO2e8BSHdoFK2cRxtvGheM4hhDC17pq2oRsvV6B+GTIY+HT6aoJ4+/EF3T9BpPTt8MWv4ChrsLV+oQWYpahRa5lDAO85jgdWxWkSxFdSllqC4bCUsLZYlQtrxQngjlywsViVDxRyHiaUCabd45qd/+sZ7jW5zbX/E9TLd293SA5G8eH1BLAwQUAAAACAA5ScJcqZ8cCDQBAADnBQAAEwAAAFtDb250ZW50X1R5cGVzXS54bWzNlM1uwjAMx1+l6hW1YWzaYaJctl03DnuB0Lo0ar4UG1befm4LSJtYBSoSXGo1tv8/x04y/9p5wKgx2mIWV0T+RQjMKzASU+fBsqd0wUji37AWXua1XIOYTafPIneWwFJCrUa8mL9BKTeaoveGl1E5m8UBNMbRax/YsrJYeq9VLon9YmuLP5RkT0g5s4vBSnmccEAsThJaz/+Afd7nFkJQBURLGehDGo4SjRZIOw2YDkucqNGVpcqhcPnGcEqKPoAssAIgo9NedDJMJu4w9N+H0fxOZgjIkcvgPPLEAlyOO4ykzU48C0EgNbzFI5GlR+8P2mkXUJzJ5vZ+u1B380DRmfE9/j3jo/6FdczupI7HO6nj6UZ1kFzxHe3Ntc9GJ3pGH1bO1dd+elqbGqnsgS+6933xA1BLAQIUABQAAAAIAC5JwlxGx01IlQAAAM0AAAAQAAAAAAAAAAAAAACAAQAAAABkb2NQcm9wcy9hcHAueG1sUEsBAhQAFAAAAAgAL0nCXGNpRppQAQAAhAIAABEAAAAAAAAAAAAAAIABwwAAAGRvY1Byb3BzL2NvcmUueG1sUEsBAhQAFAAAAAgAMEnCXOmmJbiyBQAAUxsAABMAAAAAAAAAAAAAAIABQgIAAHhsL3RoZW1lL3RoZW1lMS54bWxQSwECFAAUAAAACAAwScJcn6ovMwsKAACPJwAAGAAAAAAAAAAAAAAAtoElCAAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sUEsBAhQAFAAAAAgAMEnCXPoHmsUUBQAAzRgAABgAAAAAAAAAAAAAALaBZhIAAHhsL3dvcmtzaGVldHMvc2hlZXQyLnhtbFBLAQIUABQAAAAIADBJwlwi5HbWrAMAALAKAAAYAAAAAAAAAAAAAAC2gbAXAAB4bC93b3Jrc2hlZXRzL3NoZWV0My54bWxQSwECFAAUAAAACAAwScJc41ZAH14DAADyCgAAGAAAAAAAAAAAAAAAtoGSGwAAeGwvd29ya3NoZWV0cy9zaGVldDQueG1sUEsBAhQAFAAAAAgAMEnCXJrHqzgOAQAANgIAABQAAAAAAAAAAAAAAIABJh8AAHhsL3RhYmxlcy90YWJsZTEueG1sUEsBAhQAFAAAAAgAMEnCXIvuCz+LAAAA7QAAACMAAAAAAAAAAAAAAIABZiAAAHhsL3dvcmtzaGVldHMvX3JlbHMvc2hlZXQ0LnhtbC5yZWxzUEsBAhQAFAAAAAgAMEnCXJ2VpXfaAwAAwh0AAA0AAAAAAAAAAAAAAIABMiEAAHhsL3N0eWxlcy54bWxQSwECFAAUAAAACAAwScJcl4q7HMAAAAATAgAACwAAAAAAAAAAAAAAgAE3JQAAX3JlbHMvLnJlbHNQSwECFAAUAAAACAAwScJcgoXPsJ8BAAAoBAAADwAAAAAAAAAAAAAAgAEgJgAAeGwvd29ya2Jvb2sueG1sUEsBAhQAFAAAAAgAMEnCXAFlxe7AAAAAqwMAABoAAAAAAAAAAAAAAIAB7CcAAHhsL19yZWxzL3dvcmtib29rLnhtbC5yZWxzUEsBAhQAFAAAAAgAOUnCXKmfHAg0AQAA5wUAABMAAAAAAAAAAAAAAIAB5CgAAFtDb250ZW50X1R5cGVzXS54bWxQSwUGAAAAAA4ADgCjAwAASSoAAAAA";
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        document.getElementById('btn-export-excel').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-export-excel');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Generating Excel...';
+
+            try {
+                const area = document.getElementById('area').value;
+                const p = document.getElementById('primary').value;
+                const sh = document.getElementById('shared').value;
+                const same = document.getElementById('same').value;
+                const sepv = document.getElementById('sep').value;
+                const sch = document.getElementById('sched').value;
+                const sp = parseFloat(document.getElementById('spare').value) || 20;
+                const ownerApprove = document.getElementById('ownerApprove').value;
+                const notesVal = document.getElementById('notes').value;
+
+                // Convert base64 template to buffer
+                const arrayBuffer = base64ToArrayBuffer(EXCEL_TEMPLATE_BASE64);
+
+                // Load with ExcelJS
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+
+                // Access worksheet
+                const worksheet = workbook.getWorksheet('Routing Decision Tool');
+                if (!worksheet) {
+                    throw new Error("Worksheet 'Routing Decision Tool' not found in template.");
+                }
+
+                // Populate cells
+                worksheet.getCell('B4').value = area;
+                worksheet.getCell('B5').value = p;
+                worksheet.getCell('B6').value = sh;
+                worksheet.getCell('B7').value = same;
+                worksheet.getCell('B8').value = sepv;
+                worksheet.getCell('B9').value = sch;
+                worksheet.getCell('B10').value = sp / 100.0;
+                worksheet.getCell('B11').value = ownerApprove;
+                
+                if (notesVal) {
+                    worksheet.getCell('A25').value = notesVal;
+                }
+
+                // Write workbook to buffer
+                const buffer = await workbook.xlsx.writeBuffer();
+
+                // Trigger browser local download
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Cable_Routing_Decision_Output.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+            } catch (err) {
+                console.error("ExcelJS Export error:", err);
+                alert('Export failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+        
+    </script>
+</body>
+</html>
